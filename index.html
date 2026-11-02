@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ML Exam Rescue</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e1220;--card:#171d30;--bd:#2a3350;--tx:#e8ecf8;--mu:#97a1c0;--ac:#4d7cff;--vi:#8b5cf6;--ok:#22c55e;--no:#ef4444;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f4f6fc;--card:#fff;--bd:#d8def0;--tx:#161b2e;--mu:#586080}}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Cairo,Tahoma,sans-serif;line-height:1.8}
+*{box-sizing:border-box}
+header{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 16px;border-bottom:1px solid var(--bd);position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
+header b{background:linear-gradient(90deg,var(--ac),var(--vi));-webkit-background-clip:text;background-clip:text;color:transparent;font-size:1.2rem;margin-inline-end:auto}
+button{font:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;padding:6px 14px;transition:.2s}
+button:hover{border-color:var(--ac)}button.p{background:linear-gradient(90deg,var(--ac),var(--vi));border:0;color:#fff}
+button:disabled{opacity:.4;cursor:not-allowed}
+main{max-width:860px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.bar{height:8px;background:var(--bd);border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ac),var(--vi));transition:width .4s}
+.tag{font-size:.75rem;padding:2px 10px;border-radius:99px;border:1px solid var(--bd);color:var(--mu);display:inline-block}
+.en{direction:ltr;unicode-bidi:isolate;display:inline-block}
+.note{border-inline-start:4px solid var(--vi);padding:4px 12px;background:rgba(139,92,246,.1);border-radius:8px;margin:10px 0}
+.warn{border-inline-start:4px solid var(--no);padding:4px 12px;background:rgba(239,68,68,.08);border-radius:8px;margin:10px 0}
+.opt{display:block;width:100%;text-align:start;margin:6px 0}.opt.ok{border-color:var(--ok);background:rgba(34,197,94,.15)}.opt.no{border-color:var(--no);background:rgba(239,68,68,.15)}
+table{width:100%;border-collapse:collapse;font-size:.9rem}td,th{border:1px solid var(--bd);padding:6px;text-align:center}
+.wrap{overflow-x:auto}pre{direction:ltr;text-align:left;background:#0a0e1a;color:#cfe0ff;padding:12px;border-radius:10px;overflow-x:auto;font-size:.8rem}
+.fold{display:flex;gap:4px;direction:ltr}.fold div{flex:1;padding:10px 0;text-align:center;border-radius:8px;background:var(--ac);color:#fff;font-size:.8rem}.fold div.t{background:var(--no)}
+.fc{min-height:80px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;margin:0}
+svg{max-width:100%;height:auto}
+@media print{:root{--bg:#fff;--card:#fff;--tx:#000;--mu:#333;--bd:#999}header,.noprint{display:none!important}.onlyprint{display:block!important}body{background:#fff;color:#000;font-size:11pt}.card{break-inside:avoid}main{max-width:100%}}
+</style>
+</head>
+<body>
+<header><b>ML EXAM RESCUE</b><button onclick="go('home')">الرئيسية</button><button onclick="go('lesson',0)">المحاضرة 1</button><button onclick="go('lesson',7)">المحاضرة 2</button><button onclick="go('lesson',15)">المحاضرة 3</button><button onclick="go('lesson',24)">المحاضرة 4</button><button onclick="go('form')">المعادلات</button><button onclick="go('exam')">الامتحان</button><button onclick="go('night')">ليلة الامتحان</button><button onclick="go('lab')">المعمل</button><button onclick="go('prac')">التدريب</button></header>
+<main id="app"></main>
+<script>
+// ---------- state (localStorage with fallback) ----------
+let S={done:{},ans:{},cur:0,bank:{},exams:[]};
+try{const r=localStorage.getItem('mlrescue');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+function save(){try{localStorage.setItem('mlrescue',JSON.stringify(S))}catch(e){}}
+let view='home';
+function go(v,i){view=v;if(i!=null)S.cur=i;save();render();scrollTo(0,0)}
+const E=t=>`<span class="en">${t}</span>`;
+
+const QB=[
+['In Simple Linear Regression (SLR), what does the equation y = mx + b geometrically represent?',['A hyperplane in 3D space','A 2D regression line through data points','A sigmoid curve separating classes','A non-convex cost surface'],1],
+['Which of the following is listed as a real-world application where Multiple Linear Regression (MLR) is useful?',['Predicting real estate prices based on house size, bedrooms, age, and transit distance','Classifying spam emails based on exclamation marks','Predicting whether it will rain based on cloud coverage percentage','Determining whether a student passes or fails an exam'],0],
+['In Multiple Linear Regression, what does a model with n distinct explanatory features construct geometrically?',['A 2D line','A flat 1D curve','A hyperplane in an (n + 1)-dimensional space','A non-linear decision boundary'],2],
+['In the scalar form of Multiple Linear Regression, what does β₀ represent?',['The random error term','The y-intercept parameter / baseline value when all features are zero','The gradient of the cost function','The probability of Class 1'],1],
+['What does the partial regression coefficient βj quantify in Multiple Linear Regression?',['The expected change in y given a one-unit change in xj, holding all other features constant','The total error across all observations','The sigmoid activation value','The residual sum of squares'],0],
+['In matrix notation for Multiple Linear Regression, what is the dimension of the target vector Y?',['n × 1','(n + 1) × 1','m × 1','m × n'],2],
+['In the design matrix X, what is the purpose of the leading column of ones?',['To normalize the data','To accommodate the intercept term β₀','To represent the random errors ε','To calculate binary cross-entropy loss'],1],
+['What is the primary objective of Ordinary Least Squares (OLS) estimation?',['To maximize the sum of absolute residuals','To minimize the Sum of Squared Residuals (SSR)','To maximize the sigmoid activation function','To find the global maximum of cross-entropy loss'],1],
+['Assuming XᵀX is non-singular, what is the closed-form analytical solution for β known as the Normal Equation?',['β = XᵀXY','β = (XᵀX)⁻¹XᵀY','β = (XY)⁻¹Xᵀ','β = Xᵀ(XXᵀ)⁻¹Y'],1],
+['What is the computational complexity of training via closed-form OLS estimation mentioned in the notes?',['O(m·n)','O(m·n²)','O(n³)','O(m²·n)'],1],
+['Why does standard linear regression fail when applied to binary classification tasks?',['Its outputs are bounded strictly between 0 and 1','Its unbounded outputs can easily exceed 1 or drop below 0','It uses Binary Cross-Entropy loss instead of MSE','It cannot compute the matrix inverse (XᵀX)⁻¹'],1],
+['What function is used in logistic regression to map any real-valued input directly to a probability space?',['Linear link function','Sigmoid activation function','Ordinary least squares function','Normal equation function'],1],
+['In logistic regression, what class does the model assign if the sigmoid output σ(z) ≥ 0.5?',['Class 0','Class 1','An error state','A continuous numerical target'],1],
+['Where does the decision boundary lie in logistic regression?',['Where σ(z) = 0.5 (or z = 0)','Where σ(z) = 1.0 (or z = 1)','Where σ(z) = 0.0 (or z = −1)','Where the design matrix equals XᵀY'],0],
+['Why can Mean Squared Error (MSE) not be used with a sigmoid activation function in logistic regression?',['It makes the training too fast','It creates a non-convex, wavy cost surface with multiple local minima','It restricts outputs strictly between 0 and 1','It requires calculating the inverse of a singular matrix'],1],
+['What cost function is used instead of MSE in logistic regression to guarantee a convex surface?',['Mean Absolute Error','Binary Cross-Entropy Loss','Sum of Squared Residuals','Euclidean Distance Loss'],1],
+['In the raincoat example, what was the computed linear score z when x = 70, w = 0.1, and b = −5?',['1.0','2.0','7.0','8.8'],1],
+['In the raincoat example, what was the approximate probability of rain when z = 2.0 (e^−2.0 ≈ 0.135)?',['0.27','0.50','0.73','0.88'],3],
+['In the email spam example, what was the computed linear score z when x = 1, w = 1.5, and b = −2.5?',['−1.0','1.0','−2.5','0.27'],0],
+['In the email spam example, what was the resulting probability of spam when z = −1.0 (e¹·⁰ ≈ 2.718)?',['0.13','0.27','0.50','0.88'],1],
+['Which of the following is listed as an advantage of linear regression?',['It handles complex non-linear patterns naturally','High Interpretability and Explainability','Insensitivity to outliers','Robustness to multicollinearity without regularization'],1],
+['What makes linear regression vulnerable to multicollinearity?',['When independent variables are highly correlated, making XᵀX near-singular and inflating coefficient variance','When the target variable is discrete rather than continuous','When feature scaling is strictly applied','When L1 regularization is used'],0],
+['Why are outliers particularly problematic for standard linear regression?',['Because squared error penalization gives outliers a disproportionate influence (leverage) on the line','Because they make the sigmoid function non-convex','Because they turn the design matrix into a column vector','Because they prevent gradient descent from finding local minima'],0],
+['Which of the following is an advantage of logistic regression regarding its output?',['It outputs hard binary labels without any probability values','It outputs calibrated probability scores from 0 to 1','It operates strictly without any bias term','It guarantees zero residual error'],1],
+['How do we overcome non-linearity in standard logistic regression without changing the underlying algorithm?',['By using Mean Squared Error instead of Binary Cross-Entropy','By introducing polynomial features and interaction terms (e.g., x₁², x₂², x₁x₂)','By removing the intercept term β₀','By setting all feature weights to zero'],1],
+['What type of penalty does L2 Regularization (Ridge) add to the cost function?',['A penalty proportional to the absolute value of the weights','A penalty proportional to the squared magnitude of the weights (λw²)','A penalty equal to the inverse of the design matrix','A penalty equal to the sum of squared residuals'],1],
+['What is a key characteristic of L1 Regularization (Lasso)?',['It shrinks coefficients smoothly toward zero but never reaches zero','It can drive coefficients all the way to zero, acting as an automated feature selector','It prevents multicollinearity by making XᵀX singular','It requires no hyperparameters'],1],
+['What effect does L2 Regularization (Ridge) have on model coefficients?',['It drives irrelevant feature coefficients completely to zero','It shrinks all coefficients smoothly toward zero','It multiplies all coefficients by the design matrix','It completely eliminates the bias term'],1],
+['According to the text, does logistic regression strictly require feature scaling for the underlying model?',['Yes, gradient descent and the model completely fail without it','No, the underlying model doesn’t strictly depend on feature magnitudes like distance-based algorithms do','Yes, because it relies on distance metrics between data points','No, but it prevents the matrix XᵀX from being inverted'],1],
+['What geometric shape does Multiple Linear Regression construct in an (n + 1)-dimensional space?',['A 2D straight line','A curved polynomial parabola','A hyperplane','A sigmoid S-curve'],2],
+['What type of machine learning technique is K-Means clustering categorized under?',['Supervised Learning','Unsupervised Learning','Reinforcement Learning','Semi-supervised Learning'],1,4,1],
+['What does the parameter ‘K’ represent in the K-Means clustering algorithm?',['The total number of data points in the dataset','The number of iterations required for convergence','The quantity of predetermined clusters to be generated','The number of outliers present in the data'],2,4,2],
+['Which of the following best describes the core objectives of cluster analysis?',['Maximizing inter-cluster similarity and minimizing intra-cluster similarity','Maximizing intra-cluster similarity and minimizing inter-cluster similarity','Maximizing both intra-cluster and inter-cluster similarities','Minimizing both intra-cluster and inter-cluster similarities'],1,4,3],
+['Which of the following is NOT listed in the lecture as a real-world example of clustering?',['Grouping customers by purchasing behavior for targeted marketing','Organizing images by visual similarity','Predicting continuous housing prices based on square footage','Segmenting documents by topic'],2,4,4],
+['Which of the following is a primary task undertaken by the K-means clustering algorithm?',['Iteratively determining the optimal positions for K centroids','Assigning pre-defined class labels to unlabelled training rows','Finding the optimal linear decision boundary using gradient descent','Calculating exact probability density functions for continuous variables'],0,4,5],
+['What is the very first step in the working mechanism of the K-Means algorithm?',['Calculate the variance and place new centroids','Assign each data point to its closest centroid','Select the number K to decide the number of clusters','Draw a median line between all centroids'],2,4,6],
+['In K-Means, how are the initial k points or centroids chosen at the start of the algorithm?',['They must always be the first k rows of the dataset','They can be chosen as random points that may or may not be part of the input dataset','They are always calculated using the global mean of all features','They are determined using supervised decision trees'],1,4,7],
+['When updating the positions of the centroids during the iterative process, how is a new centroid computed?',['By finding the center of gravity (mean coordinates) of the data points assigned to that cluster','By selecting the point farthest away from the current cluster center','By taking the median value of all features in the dataset','By adding random noise to the previous centroid coordinates'],0,4,8],
+['When does the K-Means iterative assignment and update loop terminate (finish)?',['When a fixed number of 100 iterations is reached regardless of changes','When all data points belong to cluster K1','When no further reassignment of data points occurs between clusters','When the WCSS value reaches exactly zero'],2,4,9],
+['What does WCSS stand for in the context of the Elbow method?',['Weighted Cluster Similarity Score','Within Cluster Sum of Squares','Worst Case Silhouette Score','Width Centroid Standard Statistics'],1,4,10],
+['Which method compares total within-cluster variation for different K values with expected values under a null reference distribution to find optimal K?',['Elbow Method','Silhouette Method','Gap Statistic Method','Euclidean Distance Method'],2,4,11],
+['What does the Silhouette score measure?',['How well each point fits in its cluster compared to other clusters','The exact computational time complexity of the algorithm','The probability that a data point is an outlier','The linear correlation between feature M1 and M2'],0,4,12],
+['What is the range of possible average Silhouette score values?',['0 to 100','−1 to +1','−∞ to +∞','0 to 1'],1,4,13],
+['Which of the following is listed as an advantage of the K-means clustering algorithm?',['It is completely immune to the presence of outliers','It automatically determines the optimal value of K without user input','It guarantees convergence, ensuring results with each execution','It only works on small numerical datasets under 1,000 records'],2,4,14],
+['What is a known disadvantage of the K-means clustering algorithm?',['Outliers can significantly impact the position of centroids during clustering','It cannot handle text documents or multi-dimensional data','It requires prior class labels to function correctly','It fails to converge on datasets with more than two variables'],0,4,15],
+['What type of machine learning algorithm is Naïve Bayes classified as?',['An unsupervised clustering algorithm','A supervised generative learning algorithm','A non-probabilistic margin-based classifier','An unsupervised dimensionality reduction algorithm'],1,4,16],
+['Why is the Naïve Bayes classifier called “Naïve”?',['Because it assumes that all features are conditionally independent given the class','Because it requires no computational power or memory','Because it only works on binary datasets with two rows','Because it ignores target labels completely during training'],0,4,17],
+['In Bayes’ theorem, what does P(A) represent?',['The probability of the evidence','The prior probability (probability of hypothesis before observing evidence)','The likelihood of the evidence given the hypothesis','The posterior probability after observing evidence'],1,4,19],
+['In Bayes’ theorem, what does P(B) represent?',['Posterior Probability','Likelihood Probability','Marginal Probability (Probability of Evidence)','Class Conditional Probability'],2,4,20],
+['What are the initial steps undertaken when solving a classification problem with Naïve Bayes?',['Transform dataset into frequency tables, construct a likelihood table, and use Bayes’ theorem to compute posterior probability','Compute Euclidean distances, draw a median line, and update centroids','Calculate WCSS, plot an elbow graph, and select cluster centers','Estimate kernel density functions and normalize data between 0 and 1'],0,4,21],
+['Based on the calculated probabilities in the lecture’s fruit example, which fruit was predicted for the properties {Yellow, Sweet, Long}?',['Mango','Banana','Others','Apple'],1,4,22],
+['Which of the following is an advantage of the Naïve Bayes classifier?',['It performs poorly in multi-class predictions compared to other algorithms','It learns complex non-linear interactions between predictor features easily','It is fast, easy to use, and a popular choice for text classification problems','It does not require frequency or likelihood tables'],2,4,23],
+['What is the primary limitation or disadvantage of the Naïve Bayes classifier mentioned in the lecture?',['It cannot handle binary classification tasks','It assumes all features are independent, so it cannot learn relationships between features','It requires continuous features to always follow a uniform distribution','It is extremely slow when processing large datasets'],1,4,24],
+['Which Naïve Bayes model assumes that continuous predictor features follow a normal (Gaussian) distribution?',['Multinomial Naïve Bayes','Bernoulli Naïve Bayes','Gaussian Naïve Bayes','Binomial Naïve Bayes'],2,4,25],
+['Which Naïve Bayes model is primarily used for document classification problems where predictors use the frequency of words?',['Gaussian Naïve Bayes','Multinomial Naïve Bayes','Bernoulli Naïve Bayes','Bayesian Network Classifier'],1,4,26],
+['Which Naïve Bayes model works similarly to the multinomial classifier, but specifically uses independent Boolean variables (e.g., whether a word is present or not)?',['Gaussian Naïve Bayes','Multinomial Naïve Bayes','Bernoulli Naïve Bayes','Linear Naïve Bayes'],2,4,27],
+['Which of the following fields is Naïve Bayes particularly famous for and widely adopted in?',['Spam filtering and sentiment analysis (text classification)','Real-time centroid tracking in video feeds','Unsupervised image compression and pixel clustering','Solving complex differential equations in physics'],0,4,28]
+
+];
+const Q=n=>({q:QB[n-1][0],o:QB[n-1][1],a:QB[n-1][2],w:'مفتاح إجابة تمارين المحاضرة (السؤال رقم '+n+').'});
+// ---------- content ----------
+const L=[
+{t:'ما هو Machine Learning؟',x:'',b:`
+<p><b>Lecture Content:</b> الـ ${E('Machine Learning')} فرع من ${E('AI')} هدفه فهم بنية البيانات وتركيبها في نماذج (models) يقدر الإنسان يفهمها ويستخدمها.</p>
+<p><b>الفرق عن البرمجة التقليدية:</b> في ${E('Traditional computing')} الخوارزمية عبارة عن تعليمات مكتوبة صراحةً للحساب أو حل مشكلة. أما في ML فالكمبيوتر <b>يتعلم من البيانات</b> ويستخدم تحليلًا إحصائيًا ليطلع نتائج.</p>
+<p><b>التعريف في المحاضرة:</b> دراسة خوارزميات ${E('improve their performance')} في مهمة معينة ${E('with experience')}.</p>
+<p><b>دور ${E('Statistics')}:</b> الاستنتاج من عيّنة (${E('Inference from a sample')}).<br><b>دور ${E('Computer Science')}:</b> خوارزميات فعّالة لحل مشاكل الـ ${E('optimization')} وتعلّم النماذج وتمثيلها وتقييمها.</p>
+<div class="note"><b>تبسيط (مش من المحاضرة):</b> بدل ما تقول للكمبيوتر "لو X اعمل Y"، بتديله أمثلة وهو يستنتج القاعدة.</div>
+<div class="note"><b>Exam note:</b> اتعلّم التعريف: improve performance at some task with experience.</div>`,
+ q:{q:'إيه الفرق الأساسي بين البرمجة التقليدية و ML؟',o:['ML بتتعلم من البيانات بدل التعليمات الصريحة','البرمجة التقليدية بتتعلم من البيانات','مفيش فرق','ML بدون أي إحصاء'],a:0,w:'المحاضرة بتقول إن خوارزميات ML تخلي الكمبيوتر يتعلم من مدخلات البيانات.'}},
+{t:'أنواع Machine Learning الخمسة',x:'types',b:`<p>المحاضرة بتقسّم ML حسب طريقة وصول التعلم أو الـ feedback للنظام. اضغط على كل نوع:</p>`,
+ q:{q:'أي نوع بيعتمد على Reward عند نجاح الآلة؟',o:['Supervised','Unsupervised','Reinforcement','Classification'],a:2,w:'مثال الكلب: كل مرة يجيب الكورة صح نكافئه، والآلة كذلك في الألعاب.'}},
+{t:'Classification vs Regression',x:'game',b:`
+<p>في ${E('Supervised learning')} فيه نوعين رئيسيين:</p>
+<div class="wrap"><table><tr><th></th><th>Classification</th><th>Regression</th></tr><tr><td>الهدف</td><td>توقّع ${E('class label')} من مجموعة محددة</td><td>توقّع رقم مستمر ${E('continuous')}</td></tr><tr><td>أمثلة</td><td>Spam / Not spam، لغة موقع</td><td>الدخل السنوي، إنتاج محصول الذرة</td></tr></table></div>
+<p>${E('Binary')} = فئتين بالظبط (سؤال yes/no)، و${E('Multiclass')} = أكتر من فئتين.</p>
+<div class="note"><b>قاعدة المحاضرة:</b> اسأل: هل فيه ${E('continuity')} في الناتج؟ لو آه فهو Regression. (40,000$ أو 40,001$ مفيش فرق كبير. لكن موقع بالإنجليزي أو الفرنسي مفيش حاجة في النص بينهم.)</div>
+<p><b>جرّب بنفسك:</b></p>`,
+ q:{q:'التنبؤ بالدخل السنوي لشخص هو:',o:['Classification','Regression','Clustering','Binary classification'],a:1,w:'الدخل رقم مستمر وممكن يكون أي قيمة في نطاق.'}},
+{t:'Generalization / Underfitting / Overfitting',x:'fit',b:`
+<p><b>Generalization:</b> لو النموذج بيتوقع صح على بيانات جديدة ما شافهاش، بنقول إنه ${E('generalize')} من الـ training set للـ test set.</p>
+<p><b>مثال Boat Sales:</b> عالم بيانات مبتدئ عمل قاعدة معقدة (older than 45 and less than 3 children or not divorced) ودقتها 100% على الجدول. لكن القاعدة معقدة وجزء ${E('or is not divorced')} معتمد على عميل واحد بس. ده ${E('Overfitting')}. أما قاعدة "كل اللي عنده بيت بيشتري قارب" فهي بسيطة زيادة، ودي ${E('Underfitting')}.</p>
+<div class="wrap"><table><tr><th>Aspect</th><th>Underfitting</th><th>Overfitting</th></tr>
+<tr><td>Complexity</td><td>Too simple</td><td>Too complex</td></tr><tr><td>Training accuracy</td><td>Low</td><td>Very high</td></tr><tr><td>Testing accuracy</td><td>Low</td><td>Low</td></tr><tr><td>Solution</td><td>Increase complexity</td><td>Reduce complexity / Regularize</td></tr></table></div>
+<div class="note"><b>Dataset size:</b> بيانات أكتر ومتنوعة تسمح بنموذج أعقد. لكن تكرار نفس النقاط أو بيانات متشابهة جدًا <b>مش بيفيد</b>.</div>
+<div class="warn"><b>Common mistake:</b> الـ Overfitting مش معناه دقة منخفضة على التدريب. العكس: الدقة عالية جدًا على التدريب وضعيفة على الاختبار.</div>
+<p>المثال في المحاضرة للـ House Prices: Underfitting = خط مستقيم Price=a*Size+b، Overfitting = متعدد حدود بدرجة عالية، Good fit = Features مناسبة بدون حفظ الـ noise.</p>`,
+ q:{q:'نموذج دقته 100% على التدريب وضعيفة على الاختبار. ده:',o:['Underfitting','Good fit','Overfitting','Regression'],a:2,w:'النموذج حفظ التدريب (ومعاه الـ noise) ولم يتعمم.'}},
+{t:'K-Fold Cross Validation',x:'kfold',b:`
+<p>طريقة لتقييم النموذج بدقة أكبر بدل ${E('single train-test split')}. لو K=5: تقسّم البيانات 5 أجزاء متساوية، تدرّب على 4 وتختبر على 1، وتكرر 5 مرات كل مرة بجزء مختلف، وبعدها تحسب المتوسط.</p>
+<p><b>اضغط على رقم Fold لتشوف مين الاختبار:</b></p>`,
+ q:{q:'لماذا نستخدم K-Fold؟ (حسب المحاضرة)',o:['تقييم أدق وتقليل التحيّز وتحسين استخدام البيانات والمساعدة في كشف overfitting','لتسريع التدريب فقط','لزيادة عدد الـ features','لتحويل Regression إلى Classification'],a:0,w:'المحاضرة ذكرت: more reliable evaluation, reduces bias, better use of dataset, helps detect overfitting.'}},
+{t:'Pretrained vs Transfer Learning vs Fine-Tuning',x:'',b:`
+<div class="wrap"><table><tr><th>المصطلح</th><th>المعنى</th><th>تشبيه الدكتور</th></tr>
+<tr><td>Pretrained Model</td><td>موديل متدرّب مسبقًا على بيانات كبيرة (مثل ImageNet) وأوزانه محفوظة. هو <b>الأداة</b></td><td>طبيب خلّص 10 سنين تدريب عام</td></tr>
+<tr><td>Transfer Learning</td><td>الاستراتيجية: نقل المعرفة من مهمة لمهمة مختلفة لكن مرتبطة</td><td>إرسال الطبيب لكورس تخصص قلب أسبوعين</td></tr>
+<tr><td>Fine-Tuning</td><td>نوع محدد من Transfer Learning: نكمل تدريب الموديل (كل أو بعض الطبقات) على بيانات جديدة</td><td>المذاكرة الفعلية خلال الكورس</td></tr></table></div>
+<div class="warn"><b>سؤال شائع:</b> هل Pretrained model = Transfer learning؟ لأ. Pretrained هو الأداة، و Transfer learning هو الأسلوب.</div>`,
+ q:{q:'Fine-tuning هو:',o:['موديل متدرّب مسبقًا','نوع من Transfer Learning بنكمل فيه التدريب على بيانات جديدة','تقسيم البيانات','نوع من Clustering'],a:1,w:'حسب تعريف المحاضرة.'}},
+{t:'مصطلحات ML الأساسية',x:'flash',b:`<p>اضغط على الكارت علشان يتقلب:</p>`,
+ q:{q:'الـ Test Set بيُستخدم في:',o:['تدريب النموذج','تقييم النموذج وهو لم يره أثناء التدريب','ضبط hyperparameters','تعريف Features'],a:1,w:'Test Set = بيانات لتقييم النموذج ولا تُرى أثناء التدريب.'}},
+{lec:2,t:'ما هي Linear Regression؟',x:'',b:`
+<p><b>Lecture Content:</b> الـ ${E('Linear regression')} طريقة إحصائية لتوقّع العلاقة بين متغيرين. بتفترض إن فيه علاقة خطية بين ${E('independent')} (المدخل X) و${E('dependent')} (الناتج Y)، وتدوّر على أحسن خط مستقيم يوصف العلاقة دي.</p>
+<p><b>${E('Regression')} vs ${E('Classification')}:</b> Regression لما الهدف المتوقع <b>مستمر</b> (درجات الطلبة، أسعار الألماس). Classification لما الهدف <b>فئات منفصلة</b> (spam أو لا، Yes/No، 0 أو 1).</p>
+<p><b>${E('Simple linear regression')}:</b> متغير مستقل واحد + متغير تابع واحد. النموذج بيحسب ${E('slope')} و${E('intercept')} للخط. الـ Slope = قد إيه Y بيتغير لكل وحدة تغيير في X. الـ Intercept = القيمة المتوقعة لـ Y لما X = 0.</p>
+<p>موضع الخط بيتحدد بتقليل مجموع مربعات الفروق بين القيم المتوقعة والقيم الفعلية.</p>
+<div class="note"><b>Exam note:</b> Linear regression ممكن تتوسع لـ Multiple (أكتر من مدخل) و Logistic (للـ binary classification).</div>`,
+ q:{q:'الـ Intercept في Simple Linear Regression يمثل:',o:['التغيّر في Y لكل وحدة في X','القيمة المتوقعة لـ Y عندما X = 0','عدد العيّنات','قيمة الـ residual'],a:1,w:'الشرح في المحاضرة: intercept = projected value of dependent variable when independent equals zero.'}},
+{lec:2,t:'معادلة الخط المستقيم',x:'line',b:`
+<p><b>المعادلة:</b> <span class="en">Yi = β₀ + β₁Xi</span></p>
+<div class="wrap"><table><tr><th>الرمز</th><th>المعنى</th></tr><tr><td>Yi</td><td>Dependent variable (الناتج)</td></tr><tr><td>β₀</td><td>Constant / Intercept</td></tr><tr><td>β₁</td><td>Slope</td></tr><tr><td>Xi</td><td>Independent variable (المدخل)</td></tr></table></div>
+<div class="warn"><b>ملاحظة على السلايد:</b> السلايد كاتب "β1 = Slope/Intercept"، والمقصود طبقًا لشرح نفس المحاضرة هو <b>Slope</b> فقط.</div>
+<p>الخوارزمية هدفها تحديد أحسن قيم لـ β₀ و β₁ بحيث الفرق بين القيم المتوقعة والفعلية أقل ما يمكن. <b>جرّب بنفسك:</b></p>`,
+ q:{q:'في Y = β₀ + β₁X، إيه اللي بيتغير لما نزوّد β₁؟',o:['الخط بيتحرك لأعلى فقط','ميل الخط (Slope)','عدد النقاط','لا شيء'],a:1,w:'β₁ هو الـ Slope. β₀ هو اللي بيحرك الخط لأعلى/لأسفل.'}},
+{lec:2,t:'أنواع العلاقات و correlation (r)',x:'scatter',b:`
+<p>المحاضرة بتقسم العلاقات لأربعة أنواع:</p>
+<div class="wrap"><table><tr><th>النوع</th><th>الوصف</th><th>مثال المحاضرة</th><th>r</th></tr>
+<tr><td>Positive linear</td><td>X يزيد فـ Y يزيد، خط صاعد</td><td>ساعات المذاكرة ↔ الدرجات</td><td>> 0 وقريب من +1</td></tr>
+<tr><td>Negative linear</td><td>X يزيد فـ Y يقل، خط نازل</td><td>حرارة الجو ↔ فاتورة التدفئة</td><td>< 0 وقريب من −1</td></tr>
+<tr><td>No relationship</td><td>نقاط عشوائية</td><td>مقاس الحذاء ↔ عدد الأفلام</td><td>≈ 0</td></tr>
+<tr><td>Non-linear</td><td>علاقة موجودة لكن مش خط مستقيم</td><td>سرعة العربية ↔ كفاءة الوقود</td><td>مش كافي لوصفها</td></tr></table></div>
+<p>الرسومات دي نقاط افتراضية لتوضيح الشكل، وقيمة r بتتحسب منها:</p>`,
+ q:{q:'علاقة مقاس الحذاء بعدد الأفلام المشاهدة سنويًا (حسب المحاضرة):',o:['Positive','Negative','No relationship (r ≈ 0)','Non-linear'],a:2,w:'المحاضرة استخدمت المثال ده لعدم وجود ارتباط.'}},
+{lec:2,t:'Best-Fit Line و Residuals و RSS',x:'resid',b:`
+<p>الـ <b>${E('Residual')}</b> (${E('Random Error')}) = الفرق بين القيمة الفعلية <span class="en">yi</span> والقيمة المتوقعة (${E('predicted')}).</p>
+<p>الـ <b>${E('Best-fit line')}</b> هو الخط اللي بيقلل <b>${E('Residual Sum of Squares (RSS)')}</b> رياضيًا.</p>
+<p><b>جرّب:</b> حرّك الـ sliders وشوف RSS. الخطوط الحمراء هي الـ residuals.</p>`,
+ q:{q:'الـ Residual هو:',o:['ميل الخط','الفرق بين القيمة الفعلية والمتوقعة','عدد النقاط','متوسط X'],a:1,w:'حسب تعريف المحاضرة.'}},
+{lec:2,t:'Model Representation (أسعار بيوت Portland)',x:'',b:`
+<p><b>المثال:</b> أسعار البيوت في Portland: y = السعر بالألف دولار، x = المساحة بالقدم المربع. الهدف: نتوقع سعر بيت صاحبك مساحته 1250 sq.ft. المحاضرة بتقول إن الخط بيدّي حوالي <b>$250,000</b>.</p>
+<p>ده ${E('Supervised Learning')} لأن كل نقطة معاها "الإجابة الصح"، وده ${E('Regression problem')} لأن الناتج رقم حقيقي.</p>
+<div class="wrap"><table><tr><th>الرمز</th><th>المعنى</th></tr>
+<tr><td>Training set</td><td>البيانات (x, y) اللي بنتدرب عليها</td></tr><tr><td>m</td><td>عدد أمثلة التدريب (في المثال m = 47)</td></tr>
+<tr><td>x</td><td>المدخل / Feature</td></tr><tr><td>y</td><td>المخرج / Target</td></tr><tr><td>(x, y)</td><td>مثال تدريب واحد</td></tr>
+<tr><td>(x⁽ⁱ⁾, y⁽ⁱ⁾)</td><td>مثال التدريب رقم i</td></tr></table></div>
+<div class="warn"><b>خطأ شائع:</b> الـ (i) هنا <b>index</b> مش أُس. مثال الجدول: x⁽¹⁾ = 2104 و y⁽¹⁾ = 460.</div>
+<p><b>${E('Hypothesis')} (h):</b> دالة بتدّي تقدير y من x، يعني بتربط x بـ y (في المثال: سعر البيت من المساحة). المصطلح غريب لكنه معيار في ML.</p>
+<p><b>الصيغة:</b> <span class="en">hθ(x) = θ₀ + θ₁x</span> <span class="tag">من ملخصك؛ النص المستخرج من السلايد لم يظهر الصيغة، غالبًا صورة</span></p>`,
+ q:{q:'في (x⁽ⁱ⁾, y⁽ⁱ⁾) الرمز (i) يعني:',o:['أُس','Index لرقم الصف في الـ training set','عدد الـ features','قيمة الخطأ'],a:1,w:'المحاضرة أكدت إنه مش exponent.'}},
+{lec:2,t:'Cost Function و MSE و MAE',x:'mse',b:`
+<p><b>الـ Cost Function:</b> معادلة تقيس قد إيه توقعات النموذج بعيدة عن القيم الحقيقية، وبترجّعها كرقم واحد. الهدف أثناء التدريب: <b>نقللها</b>. بتدّي feedback وبتساعد خوارزميات زي gradient descent تعدّل المعاملات.</p>
+<div class="wrap"><table><tr><th>Loss</th><th>الفكرة (حسب المحاضرة)</th></tr>
+<tr><td>MSE</td><td><span class="en">(1/n) Σ (yi − ŷi)²</span> يعاقب الأخطاء الكبيرة أكتر بسبب التربيع</td></tr>
+<tr><td>MAE</td><td><span class="en">(1/n) Σ |yi − ŷi|</span> أقل حساسية للـ outliers من MSE</td></tr>
+<tr><td>Huber</td><td>يجمع MSE و MAE: تربيعي للأخطاء الصغيرة وخطي للكبيرة، robust للـ outliers، ويتحكم فيه البارامتر δ</td></tr>
+<tr><td>Log-Cosh</td><td>لوغاريتم cosh للخطأ: تقريب smooth قابل للاشتقاق لـ MAE، أقل حساسية من MSE للـ outliers</td></tr>
+<tr><td>Binary cross-entropy</td><td>للـ Classification: الفرق بين احتمالات الفئة المتوقعة والـ labels الحقيقية</td></tr>
+<tr><td>Categorical cross-entropy</td><td>نفس الفكرة لأكتر من فئتين</td></tr></table></div>
+<p class="tag">صيغ Huber و Log-Cosh لم تظهر في النص المستخرج، لذلك ما ضفتهاش.</p>
+<p><b>Additional Explanation (مثال رقمي مني):</b> جرّب أثر الـ outlier:</p>`,
+ q:{q:'أي دالة أكثر حساسية للـ outliers؟',o:['MAE','Huber','MSE','Log-Cosh'],a:2,w:'التربيع بيضخّم الأخطاء الكبيرة، والمحاضرة بتقول MAE و Huber و Log-Cosh أقل حساسية.'}},
+{lec:2,t:'Balanced vs Imbalanced Data',x:'',b:`
+<div class="wrap"><table><tr><th></th><th>Balanced</th><th>Imbalanced</th></tr>
+<tr><td>التوزيع</td><td>الفئات متمثلة تقريبًا بالتساوي</td><td>فئة ${E('majority')} أكتر بكتير من فئة ${E('minority')}</td></tr>
+<tr><td>النتيجة</td><td>نموذج غير متحيز، ومقاييس precision/recall أكثر موثوقية</td><td>النموذج بيفضّل الـ majority، و Accuracy ممكن تكون <b>مضللة</b></td></tr></table></div>
+<p>أمثلة الـ imbalance: التشخيص الطبي واكتشاف الاحتيال. تقنيات التوازن المذكورة: ${E('oversampling')} و${E('undersampling')} و${E('class weighting')} (المحاضرة ذكرتهم بالاسم فقط).</p>
+<p><b>Weighted Cross-Entropy (مثال المحاضرة):</b> سالب = 95%، موجب = 5%. الأوزان عكسية لتكرار الفئة: Weight_negative = 0.05، Weight_positive = 0.95.</p>
+<p class="en" style="display:block">Lᵢ = − Weight_yᵢ × [ yᵢ log(ŷᵢ) + (1 − yᵢ) log(1 − ŷᵢ) ]</p>
+<p>yᵢ = الـ label الحقيقي (0 أو 1)، ŷᵢ = احتمال الفئة الموجبة المتوقع. النتيجة: النموذج بيتعاقب أكتر على أخطاء الـ minority.</p>
+<div class="warn"><b>خطأ شائع:</b> نموذج دقته 95% على بيانات 95/5 مش بالضرورة جيد، لأنه ممكن يتجاهل الـ minority تمامًا.</div>`,
+ q:{q:'ليه Accuracy ممكن تكون مضللة مع imbalanced data؟',o:['لأنها بتتجاهل الـ majority','لأن النموذج يبدو دقيقًا بينما يفشل في اكتشاف الـ minority','لأنها دايمًا 50%','لأنها لا تتأثر بالبيانات'],a:1,w:'المحاضرة: model appears accurate but fails in detecting important minority cases.'}},
+{lec:2,t:'Gradient Descent',x:'gd',b:`
+<p><b>الفكرة:</b> خوارزمية optimization لتقليل الـ cost بتحديث المعاملات تكراريًا في اتجاه أشد نزول للـ cost. تخيل إنك واقف على تل بالليل ومش شايف غير الميل تحت رجليك، فبتخطو خطوة صغيرة لتحت وتكرر.</p>
+<div class="note"><b>قاعدة التحديث:</b> <span class="en">new x = old x − α × gradient</span></div>
+<p><b>مثال المحاضرة:</b> f(x) = x²، f′(x) = 2x، start x = 4، α = 0.1. النتيجة: 4 → 3.2 → 2.56 → 2.048 → 1.6384 … والـ minimum عند x = 0.</p>
+<p><b>Learning Rate:</b> كبير = ممكن يعدّي الـ minimum (overshoot)، صغير = بطيء. بنوقف لما الخطوات تصغر جدًا.</p>
+<p><b>جرّب بنفسك:</b></p>
+<div id="gdw"></div>
+<div class="wrap"><table><tr><th>Variant</th><th>الوصف</th><th>متى</th></tr>
+<tr><td>Batch GD</td><td>الـ gradient من كل الـ training data في كل iteration</td><td>dataset صغير أو يتحمّل في الذاكرة، gradient مستقر</td></tr>
+<tr><td>SGD</td><td>الـ gradient من مثال واحد في كل iteration</td><td>dataset كبير أو streaming، أسرع لكن noisy</td></tr></table></div>
+<p><b>مع balanced data:</b> التحديثات متوازنة وتقارب مستقر. <b>مع imbalanced:</b> gradients الـ majority تسيطر، والنموذج يـ underfit الـ minority. الحل: weighting الـ gradients أو تعديل قواعد التحديث.</p>`,
+ q:{q:'عند α كبير جدًا في gradient descent ممكن يحصل:',o:['Convergence أسرع دايمًا','Overshooting','لا يحدث شيء','الـ cost يصير صفر'],a:1,w:'المحاضرة: too big can overshoot, too small slows learning.'}},
+{lec:3,t:'من Simple إلى Multiple Linear Regression',x:'',b:`
+<p>في ${E('SLR')} عندنا feature واحدة x والمعادلة <span class="en">y = mx + b</span> (خط 2D في المستوى). لكن في الواقع feature واحدة نادرًا تكفي:</p>
+<div class="wrap"><table><tr><th>المثال</th><th>الـ features</th></tr><tr><td>House Price</td><td>المساحة، عدد الغرف، عمر العقار، المسافة للمواصلات</td></tr><tr><td>Energy Load</td><td>الحرارة، الرطوبة، وقت اليوم، الطلب التاريخي</td></tr><tr><td>Recovery Time</td><td>الجرعة، العمر، biomarkers، مدة العلاج</td></tr></table></div>
+<p>الـ ${E('Multiple Linear Regression (MLR)')} بتعمّم النموذج لـ n features (x₁…xₙ)، وبدل الخط بتبني <b>${E('hyperplane')}</b> في فضاء بُعده (n + 1).</p>`,q:Q(3)},
+{lec:3,t:'الصيغة Scalar والصيغة Matrix',x:'mat',b:`
+<p><b>Scalar form</b> لمشاهدة رقم i من m مشاهدة:</p>
+<p class="en" style="display:block">yᵢ = β₀ + β₁xᵢ₁ + β₂xᵢ₂ + … + βₙxᵢₙ + εᵢ , i = 1…m</p>
+<div class="wrap"><table><tr><th>الرمز</th><th>المعنى</th></tr><tr><td>yᵢ</td><td>القيمة المستهدفة المستمرة للمشاهدة i</td></tr><tr><td>β₀</td><td>الـ intercept: القيمة الأساسية لما كل xᵢⱼ = 0</td></tr><tr><td>βⱼ</td><td>Partial regression coefficient: التغيّر المتوقع في y لو xⱼ زادت وحدة واحدة <b>مع تثبيت باقي الـ features</b> (ceteris paribus)</td></tr><tr><td>εᵢ</td><td>خطأ عشوائي (residual)</td></tr><tr><td>m / n</td><td>عدد المشاهدات / عدد الـ features</td></tr></table></div>
+<p><b>Matrix notation:</b> <span class="en">Y = Xβ + ε</span>. غيّر m و n وشوف الأبعاد:</p>`,q:Q(7)},
+{lec:3,t:'OLS و Normal Equation (خطوة بخطوة)',x:'ols',b:`
+<p>${E('Ordinary Least Squares')}: ندوّر على β̂ اللي بيقلل ${E('SSR')} = مجموع مربعات الـ residuals. شرط الحل: XᵀX <b>invertible (non-singular)</b>.</p>
+<p>اضغط Next Step علشان تشوف كل انتقال. السطور الأساسية من المحاضرة، وشرح الانتقال Additional Explanation.</p>`,q:Q(9)},
+{lec:3,t:'مميزات وعيوب Linear Regression',x:'',b:`
+<div class="wrap"><table><tr><th>المميزات (حسب المحاضرة)</th><th>العيوب (حسب المحاضرة)</th></tr>
+<tr><td><b>Interpretability:</b> كل βⱼ يوضح أثر xⱼ بتثبيت الباقي، وسهل معرفة الـ features المؤثرة واتجاه تأثيرها</td><td><b>Linearity assumption:</b> مش بتلقط العلاقات غير الخطية إلا بـ feature engineering (مثل حدود polynomial)</td></tr>
+<tr><td><b>Computational efficiency:</b> الحل المغلق بذاكرة قليلة وتعقيد O(m·n²)</td><td><b>Outliers:</b> التربيع يعطيها leverage زائد فتسحب الخط</td></tr>
+<tr><td><b>Lightweight inference:</b> dot-product بسيط xᵀβ يناسب edge devices</td><td><b>Multicollinearity:</b> لما الـ features مترابطة جدًا تبقى XᵀX شبه singular وتتضخم variance للمعاملات</td></tr></table></div>`,q:Q(22)},
+{lec:3,t:'Logistic Regression و Sigmoid',x:'sig',b:`
+<p>Linear regression مش مناسبة مباشرة للـ Classification لأن مخرجاتها <b>${E('unbounded')}</b> وممكن تعدّي 1 أو تنزل تحت 0. الـ Logistic regression بتقدّر <b>احتمال</b> انتماء العينة لفئة y ∈ {0, 1} باستخدام ${E('link function')}.</p>
+<p class="en" style="display:block">z = wᵀx + b &nbsp;&nbsp; σ(z) = 1 / (1 + e⁻ᶻ)</p>
+<p>لو σ(z) ≥ 0.5 → Class 1، غير كده Class 0. الـ ${E('decision boundary')} عند σ(z) = 0.5 أي z = 0. <b>حرّك z:</b></p>`,q:Q(14)},
+{lec:3,t:'Cost Function: MSE مقابل Binary Cross-Entropy',x:'',b:`
+<p>استخدام MSE مع sigmoid بيعمل سطح تكلفة <b>${E('non-convex')}</b> متعرج وفيه ${E('local minima')} كتير. فبنستخدم Binary Cross-Entropy:</p>
+<p class="en" style="display:block">J(w) = −(1/m) Σᵢ [ y⁽ⁱ⁾ log(σ(z⁽ⁱ⁾)) + (1 − y⁽ⁱ⁾) log(1 − σ(z⁽ⁱ⁾)) ]</p>
+<p>المحاضرة بتقول إن الدالة دي <b>convex</b> وده بيضمن إن gradient descent يلاقي الـ global minimum، والأوزان بتتحدث تكراريًا بحساب gradient الـ loss بالنسبة لكل وزن.</p>
+<p><b>Additional Explanation (قراءة الصيغة):</b> الحد الأول بيشتغل لما y = 1، والثاني لما y = 0؛ في كل عينة واحد منهم بس بيفضل.</p>
+<div class="note">السلايد لا يشرح سبب الـ non-convexity أو برهان الـ convexity، فمفيش تفاصيل زيادة هنا.</div>`,q:Q(15)},
+{lec:3,t:'أمثلة محلولة: Raincoat و Spam',x:'ex',b:`<p>اختار مثال واضغط Next Step:</p>`,q:Q(18)},
+{lec:3,t:'Polynomial Features و Regularization',x:'reg',b:`
+<p><b>المشكلة:</b> Logistic regression العادية بترسم خط مستقيم. لو البيانات دايرية (Class 1 في النص وClass 0 حلقة حواليه) الخط يفشل.</p>
+<p><b>الحل:</b> ${E('Polynomial features')} و${E('interaction terms')}: نغذّي النموذج بـ x₁² و x₂² و x₁x₂ بدل x₁ و x₂ فقط، فيصير الـ boundary منحني بدون تغيير الخوارزمية.</p>
+<p>لما الـ features تكتر يحصل overfitting وعدم استقرار معاملات، فنضيف penalty للـ cost:</p>
+<div class="wrap"><table><tr><th></th><th>L1 (Lasso)</th><th>L2 (Ridge)</th></tr><tr><td>Penalty</td><td>λΣ|w|</td><td>λΣw²</td></tr><tr><td>التأثير</td><td>ممكن يوصّل معاملات لصفر تمامًا</td><td>يقلل كل المعاملات تدريجيًا</td></tr><tr><td>الفائدة</td><td>Automated feature selection</td><td>يمنع feature واحدة تسيطر ويخفف multicollinearity</td></tr></table></div>
+<p><b>Additional Explanation (توضيح رقمي بوزن افتراضي):</b></p>`,q:Q(27)},
+{lec:3,t:'Linear vs Logistic Regression',x:'',b:`
+<div class="wrap"><table><tr><th></th><th>Linear Regression</th><th>Logistic Regression</th></tr>
+<tr><td>Type</td><td>Regression</td><td>Binary classification</td></tr>
+<tr><td>Output</td><td>رقم مستمر unbounded</td><td>احتمال بين 0 و 1 (ثم Class 0/1 بـ threshold)</td></tr>
+<tr><td>Function</td><td>Linear: Y = Xβ + ε</td><td>σ(z) حيث z = wᵀx + b</td></tr>
+<tr><td>Cost</td><td>SSR (مجموع مربعات الـ residuals)</td><td>Binary Cross-Entropy</td></tr>
+<tr><td>Optimization</td><td>OLS / Normal Equation (closed-form)</td><td>تحديث تكراري للأوزان بالـ gradient (gradient descent)</td></tr></table></div>
+<p class="tag">الجدول مجمّع من محتوى المحاضرة، والسلايد نفسه لا يحتوي جدول مقارنة جاهز.</p>
+<p><b>مميزات Logistic (من المحاضرة):</b> بسيطة وسهلة التفسير، بتطلّع احتمالات تقدر تعدّل threshold حسب تحمّلك للـ false positives/negatives، أداؤها كويس على البيانات القابلة للفصل خطيًا، ومع L1/L2 بتقل مخاطرة الـ overfitting، ومش بتتطلب feature scaling بشكل صارم.</p>`,q:Q(12)},
+{lec:4,t:'K-Means Clustering: الفكرة',x:'',b:`
+<p>الـ ${E('K-Means')} تقنية ${E('Unsupervised Learning')} بتقسّم dataset غير معنونة (${E('untagged / unlabeled')}) لعناقيد (${E('clusters')}). الـ <b>K</b> = عدد العناقيد المحدد مسبقًا (K=2 يعني عنقودين، K=3 تلاتة…). كل نقطة بتنتمي لمجموعة واحدة فقط من نقط متشابهة الخصائص، من غير تدريب مسبق.</p>
+<p><b>Clustering:</b> تقسيم البيانات لمجموعات بحيث النقط في نفس العنقود أشبه ببعضها منها بالعناقيد التانية.</p>
+<div class="wrap"><table><tr><th>الأهداف الأساسية</th><th>أمثلة من المحاضرة</th></tr><tr><td>تعظيم التشابه داخل العنقود (${E('Intra-cluster similarity')})<br>تقليل التشابه بين العناقيد (${E('Inter-cluster')})<br>اكتشاف أنماط طبيعية بدون labels</td><td>تجميع العملاء حسب سلوك الشراء · تنظيم الصور حسب التشابه · أنواع المرضى من القياسات · تقسيم المستندات حسب الموضوع</td></tr></table></div>
+<p>الخوارزمية <b>${E('centroid-based')}</b>: كل عنقود له ${E('centroid')}، وهدفها تقليل إجمالي المسافة بين النقط ومراكز عناقيدها. وبتعمل مهمتين: تحدد مواقع k centroids تكراريًا، وتسند كل نقطة لأقرب مركز.</p>
+<div class="warn"><b>خطأ شائع:</b> K-Means مش Classification. مفيش labels أصلًا.</div>`,q:Q(31)},
+{lec:4,t:'خطوات K-Means (جرّبها بنفسك)',x:'kmeans',b:`
+<ol><li>اختار K.</li><li>اختار K نقاط عشوائية كـ centroids (ممكن تكون من خارج الـ dataset).</li><li>اسند كل نقطة لأقرب centroid.</li><li>احسب centroid جديد لكل cluster (center of gravity).</li><li>أعد الإسناد لأقرب centroid.</li><li>لو حصل reassignment ارجع للخطوة 4، وإلا انتهِ.</li><li>النموذج جاهز.</li></ol>
+<p>الرسم التالي بنقاط افتراضية مني (مش من السلايد). اضغط Next Step:</p>`,q:Q(39)},
+{lec:4,t:'اختيار K: Elbow وSilhouette وغيرهم',x:'elbow',b:`
+<p><b>Elbow Method:</b> أشهر طريقة، بتستخدم <b>${E('WCSS')}</b> = ${E('Within Cluster Sum of Squares')}: مجموع مربعات المسافات بين كل نقطة ومركز عنقودها، أي إجمالي التباين داخل العناقيد. بنرسم WCSS لقيم K مختلفة ونختار K عند "الكوع".</p>
+<p><b>Domain Knowledge:</b> أحيانًا فهمك للمشكلة يحدد K (مثلًا متطلبات العمل تقول 3–5 شرائح عملاء).</p>
+<p><b>Gap Statistic:</b> بنقارن التباين داخل العناقيد لكل K مع قيمته المتوقعة تحت توزيع مرجعي عشوائي (null)، وأفضل K عند أكبر gap.</p>
+<p><b>Silhouette:</b> بيقيس مدى ملاءمة النقطة لعنقودها مقارنة بالعناقيد التانية. القيم من <b>−1 إلى +1</b> والأعلى أفضل، ونختار K ذو أعلى متوسط.</p>
+<svg viewBox="0 0 300 50"><line x1="20" y1="25" x2="280" y2="25" stroke="var(--mu)"/><text x="10" y="45" fill="var(--tx)" font-size="11">−1</text><text x="145" y="45" fill="var(--tx)" font-size="11">0</text><text x="270" y="45" fill="var(--tx)" font-size="11">+1</text><text x="150" y="14" fill="var(--ok)" font-size="11" text-anchor="middle">الأعلى = أفضل</text></svg>
+<p class="note"><b>Additional:</b> منحنى الـ Elbow أدناه محسوب من نقاط افتراضية (نفس نقاط الدرس السابق) بتشغيل K-Means لكل K:</p>`,q:Q(40)},
+{lec:4,t:'قياس المسافة: Euclidean و Manhattan',x:'dist',b:`
+<p>المحاضرة بتذكر إن المسافة بين النقط والـ centroids ممكن تتقاس بـ ${E('Euclidean distance')} أو ${E('Manhattan distance')}. صيغة Euclidean المستخدمة في المثال الرقمي: <span class="en">√((X₀−X꜀)² + (Y₀−Y꜀)²)</span>.</p>
+<p class="note"><b>Additional Explanation:</b> Manhattan = |Δx| + |Δy| (حركة أفقية ورأسية)، والمحاضرة لم تعطِ صيغتها. حرّك الفرق:</p>`,q:Q(37)},
+{lec:4,t:'مميزات وعيوب K-Means',x:'',b:`
+<div class="wrap"><table><tr><th>المميزات</th><th>العيوب</th></tr>
+<tr><td><b>Easy implementation:</b> تكرارية وبسيطة ويمكن تنفيذها يدويًا</td><td><b>Deciding K:</b> تحدي ويحتاج طرق مثل elbow</td></tr>
+<tr><td><b>Scalability:</b> من 10 سجلات لـ 10 مليون</td><td><b>Initial centroids:</b> الكفاءة تعتمد على اختيارها بعناية</td></tr>
+<tr><td><b>Convergence:</b> مضمون إنها تطلع نتيجة في كل مرة</td><td><b>Outliers:</b> تأثر موضع الـ centroids وتسبب عدم دقة، وتخفيف ذلك بإزالتها أثناء data cleaning</td></tr>
+<tr><td><b>Generalization:</b> تنفع لبيانات رقمية أو مستندات نصية وبأحجام وتوزيعات مختلفة</td><td></td></tr>
+<tr><td><b>Choice of centroids:</b> سهولة اختيار وإسناد المراكز</td><td></td></tr></table></div>`,q:Q(44)},
+{lec:4,t:'مثال رقمي: Height / Weight',x:'kme',b:`
+<p>البيانات (Height, Weight) كما في المحاضرة، والمطلوب عنقودين K=2 بالمسافة الإقليدية. المحاضرة بتبدأ بنقطتين كمراكز، وبعدين تدخل النقط واحدة واحدة وتحدّث مركز العنقود بعد كل إضافة.</p>
+<div class="warn"><b>تنبيه على السلايد:</b> الإجابة النهائية المكتوبة بخط اليد فيه أرقام نقاط حتى 12 بينما الجدول 9 صفوف فقط، لذلك ماقدرتش أطابق نتيجتي النهائية معاها. الخطوات المؤكدة هي النقطة 3: المسافتان 20.80 و 4.47، المركز الجديد (169, 58).</div>
+<p>اضغط Next Step (الحساب تلقائي بنفس أسلوب المحاضرة):</p>`,q:Q(41)},
+{lec:4,t:'Naïve Bayes و Bayes Theorem',x:'bayes',b:`
+<p>${E('Naïve Bayes')} طريقة <b>Classification</b> مبنية على Bayes’ Theorem بافتراض الاستقلال بين الـ predictors: وجود feature في class غير مرتبط بوجود أي feature تانية. بتُستخدم في ${E('Supervised learning')} (مثل ${E('text classification')} و${E('spam filtering')} و${E('sentiment analysis')}) وهي من ${E('Generative learning algorithms')} اللي بتنمذج توزيع المدخلات لكل class. الافتراض: بمعلومية الـ class، الـ features ${E('conditionally independent')}.</p>
+<p>مثال التفاحة: أحمر، دائري، قطره 3 بوصة، حتى لو مترابطين، كل واحدة بتساهم باستقلال، ومن هنا اسم "Naïve". ورغم تبسيطه فكتير بيتفوق على طرق أعقد وبيناسب البيانات الكبيرة.</p>
+<p class="en" style="display:block;font-size:1.1rem">P(A|B) = P(B|A) × P(A) / P(B)</p>
+<div class="wrap"><table><tr><th>الرمز</th><th>الاسم</th><th>المعنى</th></tr><tr><td>P(A|B)</td><td>Posterior</td><td>احتمال الفرضية A بعد ملاحظة الحدث B</td></tr><tr><td>P(B|A)</td><td>Likelihood</td><td>احتمال الدليل لو الفرضية صحيحة</td></tr><tr><td>P(A)</td><td>Prior</td><td>احتمال الفرضية قبل رؤية الدليل</td></tr><tr><td>P(B)</td><td>Marginal</td><td>احتمال الدليل</td></tr></table></div>
+<p><b>جرّب بأرقام مثال Weather:</b></p>`,q:Q(47)},
+{lec:4,t:'كيف يعمل Naïve Bayes: Weather و Fruit',x:'nbex',b:`
+<p><b>الخطوات:</b> (1) حوّل الـ dataset إلى ${E('Frequency tables')}. (2) ابنِ ${E('Likelihood table')}. (3) احسب الـ ${E('posterior')} بنظرية Bayes، واختر الـ class ذو الاحتمال الأعلى.</p>
+<p class="tag">جداول التكرار الأصلية صور في السلايد، فبعرض الأرقام المكتوبة فقط.</p>
+<p>اضغط Next Step لكل مثال:</p>`,q:Q(49)},
+{lec:4,t:'أنواع Naïve Bayes ومميزاته وعيوبه',x:'',b:`
+<div class="wrap"><table><tr><th>النوع</th><th>الافتراض / الاستخدام</th></tr>
+<tr><td>Gaussian</td><td>الـ features <b>مستمرة</b> وبتتبع توزيع طبيعي (normal)</td></tr>
+<tr><td>Multinomial</td><td>للبيانات multinomial، مناسب لتصنيف المستندات (رياضة، سياسة، تعليم…)، والـ predictors = <b>تكرار الكلمات</b></td></tr>
+<tr><td>Bernoulli</td><td>زي Multinomial لكن الـ predictors متغيرات <b>Boolean</b> مستقلة (الكلمة موجودة أم لا)، شهير أيضًا لتصنيف المستندات</td></tr></table></div>
+<div class="wrap"><table><tr><th>المميزات</th><th>العيوب</th></tr><tr><td>سريع وسهل · Binary و Multi-class · أداء جيد في multi-class مقارنة بغيره · الأشهر لتصنيف النصوص</td><td>يفترض استقلال كل الـ features، فلا يقدر يتعلم العلاقات بينها</td></tr></table></div>`,q:Q(53)},
+{lec:4,t:'K-Means vs Naïve Bayes',x:'',b:`
+<div class="wrap"><table><tr><th></th><th>K-Means</th><th>Naïve Bayes</th></tr>
+<tr><td>التعلم</td><td>Unsupervised</td><td>Supervised (Generative)</td></tr>
+<tr><td>المهمة</td><td>Clustering</td><td>Classification</td></tr>
+<tr><td>البيانات</td><td>Unlabeled</td><td>Labeled (classes معروفة)</td></tr>
+<tr><td>الآلية</td><td>Centroids + Distance، تكرار حتى عدم تغيّر الإسناد</td><td>Probabilities (Bayes) + استقلال الـ features</td></tr>
+<tr><td>تطبيقات</td><td>تقسيم العملاء، الصور، المرضى، المستندات</td><td>Spam filtering، Sentiment analysis، Text classification</td></tr></table></div>
+<p class="tag">الجدول مجمّع من محتوى المحاضرة (لا يوجد جدول مقارنة في السلايد).</p>`,q:Q(46)}
+
+];
+const TYPES={Supervised:'تدريب بأمثلة مدخلات + مخرجات معنونة (labels). النموذج يقارن ناتجه بالـ label ويصلّح الخطأ. يُستخدم في التنبؤ بالمستقبل من بيانات تاريخية وفلترة spam. مثال: صور قروش ومحيطات.',Unsupervised:'بيانات بلا labels. الخوارزمية تكتشف أنماط وتشابهات. مفيدة لأن البيانات غير المعنونة أكتر. تُستخدم في تحليل المعاملات واكتشاف الشذوذ في كروت الائتمان وأنظمة التوصية.','Reinforcement':'Learner يتفاعل مع Environment: يعمل Action فيرجع Reward وSensory Input. مثال الكلب والكورة والألعاب. التركيز على التوازن بين exploring وexploiting.','Deep Learning':'نموذج مبني على Artificial Neural Networks (ANN). يحتاج قدرة معالجة وبيانات ضخمة. تطبيقات: computer vision وspeech recognition وNLP وmedical image analysis.','Deep Reinforcement':'دمج Deep Learning مع Reinforcement Learning (مثل Q-learning). نجح في robotics وvideo games وfinance وhealthcare.'};
+const GAME=[['تصنيف إيميل: spam أم لا؟','c','فئتان محددتان: Binary classification.'],['التنبؤ بالدخل السنوي','r','قيمة مستمرة.'],['التنبؤ بإنتاج محصول الذرة','r','رقم مستمر (أي قيمة).'],['التعرف على لغة موقع ويب','c','فئات منفصلة ولا يوجد شيء بين الإنجليزية والفرنسية.']];
+const TERMS=[['Feature','خاصية قابلة للقياس (age, height…). رمزها x أو X'],['Label / Target','الناتج المراد توقعه. رمزه y'],['Sample / Instance','صف واحد: feature vector + label (اختياري)'],['Training Set','بيانات لتدريب النموذج'],['Test Set','بيانات لتقييم النموذج لم يرها أثناء التدريب'],['Validation Set','تقسيم ثالث لضبط hyperparameters'],['Model','دالة f: X → Y تربط المدخلات بالمخرجات'],['Hypothesis','نموذج مرشح (h)'],['Loss / Cost Function','مقياس خطأ التوقعات L(y, ŷ)'],['Training / Fitting','تعديل معاملات النموذج لتقليل الـ loss']];
+
+// ---------- helpers ----------
+const prog=()=>Math.round(Object.keys(S.done).length/L.length*100);
+function render(){const a=document.getElementById('app');
+ if(view==='home')home(a);else if(view==='lesson')lesson(a);else if(view==='form')form(a);else if(view==='exam')exam(a);else if(view==='night')night(a);else if(view==='lab')lab(a);else{prac(a);bs()}}
+function home(a){const n=Object.keys(S.ans).length,c=Object.values(S.ans).filter(Boolean).length;
+ const weak=Object.keys(S.ans).filter(k=>!S.ans[k]).slice(0,3);
+ const pl=n=>{const ix=L.map((l,i)=>i).filter(i=>(L[i].lec||1)===n);return Math.round(ix.filter(i=>S.done[i]).length/ix.length*100)};
+ const lock=[];
+ a.innerHTML=`<h2>أهلًا 👋 ذاكر من الصفر</h2><div class="card"><div>تقدم محاضرة 1: <b>${prog()}%</b></div><div class="bar"><i style="width:${prog()}%"></i></div>
+ <p>دروس مكتملة: ${Object.keys(S.done).length}/${L.length} · أسئلة اتحلت: ${n} · دقة: ${n?Math.round(c/n*100):0}% · متوسط الامتحانات: ${avgEx()}</p>
+ <div class="note"><b>نقاط ضعف تحتاج مراجعة:</b> ${weak.length?weak.map(k=>L[k].t).join(' · '):'لا توجد نقاط ضعف مسجلة حتى الآن.'}</div>
+ <button class="p" onclick="go('lesson',${Math.min(Object.keys(S.done).length,L.length-1)})">Continue Learning</button> <button onclick="go('exam')">Start Exam</button> <button onclick="go('night')">Quick Revision</button> <button onclick="go('lab')">Visual Learning Lab</button></div>
+ <div class="grid"><div class="card"><span class="tag">أهمية: عالية</span><h3>Lecture 1</h3><p>Introduction to Machine Learning · 7 موضوعات</p><div class="bar"><i style="width:${pl(1)}%"></i></div><br><button class="p" onclick="go('lesson',0)">Start</button></div>
+ <div class="card"><span class="tag">أهمية: عالية</span><h3>Lecture 2</h3><p>Linear Regression with One Variable · 8 موضوعات</p><div class="bar"><i style="width:${pl(2)}%"></i></div><br><button class="p" onclick="go('lesson',7)">Start</button></div>
+ <div class="card"><span class="tag">أهمية: عالية</span><h3>Lecture 3</h3><p>Multiple Linear Regression & Logistic Regression · 9 موضوعات</p><div class="bar"><i style="width:${pl(3)}%"></i></div><br><button class="p" onclick="go('lesson',15)">Start</button></div>
+ <div class="card"><span class="tag">أهمية: عالية</span><h3>Lecture 4</h3><p>K-Means & Naïve Bayes · 9 موضوعات</p><div class="bar"><i style="width:${pl(4)}%"></i></div><br><button class="p" onclick="go('lesson',24)">Start</button></div>
+ ${lock.map(l=>`<div class="card" style="opacity:.7"><span class="tag">قريبًا</span><h3>${l[0]}</h3><p>${l[1]}</p><p style="color:var(--mu);font-size:.85rem">هيتضاف بعد قراءة ملف الـ PDF الخاص بيه، بدون أي محتوى مخترع.</p></div>`).join('')}</div>`}
+function lesson(a){const i=S.cur,l=L[i];
+ a.innerHTML=`<span class="tag">Lecture ${l.lec||1} · درس ${i+1}/${L.length}</span><h2>${l.t}</h2><div class="card">${l.b}<div id="w"></div></div>
+ <div class="card" id="extraExample" hidden></div>
+ <div class="card" id="extraExplain" hidden></div>
+ <div class="card"><b>سؤال للتأكد</b><p>${l.q.q}</p>${l.q.o.map((o,k)=>`<button class="opt" onclick="ans(${i},${k})">${o}</button>`).join('')}<div id="fb"></div></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><button ${i?'':'disabled'} onclick="go('lesson',${i-1})">Previous Lesson</button><button onclick="explainAgain(${i})">Explain Again</button><button onclick="showLessonExample(${i})">Show Example</button><button class="p" onclick="S.done[${i}]=1;save();go('lesson',${Math.min(i+1,L.length-1)})">Mark as Completed ${S.done[i]?'✓':''}</button><button ${i<L.length-1?'':'disabled'} onclick="go('lesson',${i+1})">Next Lesson</button></div>`;
+ W[l.x]&&W[l.x](document.getElementById('w'))}
+function explainAgain(i){const l=L[i],e=document.getElementById('extraExplain');e.hidden=false;e.innerHTML=`<b>شرح أبسط للدرس:</b><p>قسّمنا فكرة «${l.t}» إلى خطوة واحدة: عرف المصطلح، حدّد ماذا يدخل للنموذج، وحدّد ماذا يُتوقع منه كناتج. ارجع للمخطط أو المعادلة بالأعلى واربط كل رمز بالخطوة اللي قبلها.</p><div class="note"><b>سؤال سريع:</b> ${l.q.w}</div>`;e.scrollIntoView({behavior:'smooth',block:'nearest'})}
+function showLessonExample(i){const l=L[i],e=document.getElementById('extraExample');const examples={
+ 'Classification vs Regression':'مثال: رقم الدخل 35,000 هو Regression، أما البريد «spam / not spam» فهو Classification.',
+ 'Generalization / Underfitting / Overfitting':'House prices: خط مستقيم قد يكون underfitting، متعدد حدود معقد قد يحفظ noise، والخط المناسب هو الأقل خطأ على بيانات التدريب والاختبار.',
+ 'Linear Regression with One Variable':'إذا كان سلوك النموذج Y = 2 + 0.5X، فـ X = 4 يعطي Y = 4.',
+ 'Naïve Bayes و Bayes Theorem':'Weather: P(Yes|Sunny) = 0.60 أكبر من P(No|Sunny) = 0.41، لذلك القرار Play = Yes.',
+ 'أي درس':'فكّك المثال إلى inputs → الخطوة الحسابية أو قاعدة القرار → النتيجة، ثم راجع سؤال الدرس.'
+};e.hidden=false;e.innerHTML=`<b>مثال تطبيقي:</b><p>${examples[l.t]||examples['أي درس']}</p>`;e.scrollIntoView({behavior:'smooth',block:'nearest'})}
+function ans(i,k,pr){const q=L[i].q,ok=k===q.a;S.ans[i]=ok;save();
+ const bs=document.querySelectorAll('.opt');bs.forEach((b,j)=>{b.disabled=true;if(j===q.a)b.classList.add('ok');else if(j===k)b.classList.add('no')});
+ document.getElementById('fb').innerHTML=`<p><b>${ok?'✅ صح':'❌ غلط'}</b> — ${q.w}</p>`}
+function prac(a){const n=Object.keys(S.ans).length,c=Object.values(S.ans).filter(Boolean).length;
+ const wrong=Object.keys(S.ans).filter(k=>!S.ans[k]);
+ a.innerHTML=`<h2>التدريب</h2><div class="card"><p>الأسئلة المحلولة: ${n} · الصح: ${c} · الدقة: ${n?Math.round(c/n*100):0}%</p>
+ <p><span class="tag">Practice Question</span> أسئلة الدروس في المحاضرتين 1 و2 مشتقة من المحتوى (ليست منسوبة للدكتور). أما أسئلة Lecture 3 و4 فمنقولة حرفيًا من تمارين المحاضرة بمفتاح إجابتها الأصلي.</p></div>
+ <div class="card"><b>مواضيع محتاجة مراجعة</b>${wrong.length?wrong.map(k=>`<p><button onclick="go('lesson',${k})">${L[k].t}</button></p>`).join(''):'<p>لا يوجد حتى الآن. حل أسئلة الدروس وهتظهر هنا الأخطاء.</p>'}</div>
+ ${bankHtml()}<div class="card"><b>كل أسئلة الدروس</b>${L.map((l,k)=>`<p>${S.ans[k]===undefined?'⚪':S.ans[k]?'✅':'❌'} <button onclick="go('lesson',${k})">${l.t}</button></p>`).join('')}</div>`}
+
+// ---------- widgets ----------
+const W={
+types(el){el.innerHTML=Object.keys(TYPES).map(k=>`<button class="tp" style="margin:3px">${k}</button>`).join('')+'<div class="note" id="tx">اختار نوع</div>';
+ el.querySelectorAll('.tp').forEach(b=>b.onclick=()=>el.querySelector('#tx').textContent=TYPES[b.textContent])},
+game(el){let i=0,sc=0;const draw=()=>{if(i>=GAME.length){el.innerHTML=`<div class="note">النتيجة: ${sc}/${GAME.length}</div><button onclick="i=0">إعادة</button>`;el.querySelector('button').onclick=()=>{i=0;sc=0;draw()};return}
+ el.innerHTML=`<div class="card"><b>${GAME[i][0]}</b><br><button id="c">Classification</button> <button id="r">Regression</button><p id="g"></p></div>`;
+ ['c','r'].forEach(k=>el.querySelector('#'+k).onclick=()=>{const ok=GAME[i][1]===k;if(ok)sc++;el.querySelector('#g').innerHTML=(ok?'✅ ':'❌ ')+GAME[i][2]+' <button id="n">التالي</button>';el.querySelector('#n').onclick=()=>{i++;draw()}})};draw()},
+fit(el){const P=[[30,150],[70,110],[110,100],[150,70],[190,80],[230,40],[270,35]];
+ const poly=P.map(p=>p.join(',')).join(' ');
+ const dots=P.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--ac)"/>`).join('');
+ const mk=(t,l)=>`<div><svg viewBox="0 0 300 180" width="100%"><rect width="300" height="180" fill="none" stroke="var(--bd)"/>${dots}${l}<text x="150" y="172" fill="var(--tx)" font-size="12" text-anchor="middle">${t}</text></svg></div>`;
+ el.innerHTML=`<div class="grid">${mk('Underfitting','<line x1="20" y1="100" x2="280" y2="100" stroke="var(--no)" stroke-width="2"/>')}${mk('Good Fit','<path d="M20 155 Q150 90 280 28" stroke="var(--ok)" stroke-width="2" fill="none"/>')}${mk('Overfitting',`<polyline points="${poly}" stroke="var(--vi)" stroke-width="2" fill="none"/>`)}</div><p class="note">رسم توضيحي تعليمي (نقاط افتراضية)، مش من سلايدات الدكتور.</p>`;
+ const c=document.createElement('div');c.className='card';c.innerHTML='<b>Training Error مقابل Testing Error حسب Model Complexity</b>';el.appendChild(c);W.cplx(c)},
+kfold(el){let t=0;const draw=()=>{el.innerHTML=`<div class="fold">${[1,2,3,4,5].map(k=>`<div class="${k-1===t?'t':''}">Fold ${k}</div>`).join('')}</div><p>Iteration ${t+1}: Test = Fold ${t+1} (أحمر) · Train = باقي الفولدز (أزرق)</p>
+ <p>${[1,2,3,4,5].map(k=>`<button class="kb" data-k="${k-1}">${k}</button>`).join(' ')}</p>
+ <div class="note"><b>مثال المحاضرة (K=3 على 6 عينات):</b> (80+90+85)/3 = <b>85%</b></div>
+ <pre>from sklearn.model_selection import KFold, cross_val_score
+from sklearn.linear_model import LogisticRegression
+import numpy as np
+model = LogisticRegression()
+kfold = KFold(n_splits=5, shuffle=True, random_state=42)
+scores = cross_val_score(model, X, y, cv=kfold)
+print("Average Accuracy:", np.mean(scores))</pre>
+ <p style="font-size:.9rem">n_splits=5 → خمس فولدز · shuffle=True → يخلط البيانات قبل التقسيم · cross_val_score → يدرّب ويختبر في كل فولد · np.mean → المتوسط.</p>`;
+ el.querySelectorAll('.kb').forEach(b=>b.onclick=()=>{t=+b.dataset.k;draw()})};draw()},
+flash(el){el.innerHTML='<div class="grid">'+TERMS.map(t=>`<div class="card fc" data-d="${t[1]}"><b>${t[0]}</b></div>`).join('')+'</div>';
+ el.querySelectorAll('.fc').forEach(c=>{const n=c.innerHTML;let f=0;c.onclick=()=>{f=!f;c.innerHTML=f?c.dataset.d:n}})},
+sl(id,mn,mx,st,v,lab){return `<div>${lab} = <b id="v_${id}">${v}</b><input id="${id}" type="range" min="${mn}" max="${mx}" step="${st}" value="${v}" style="width:100%"></div>`},
+line(el){el.innerHTML=W.sl('b0',-5,5,0.5,1,'β₀')+W.sl('b1',-2,2,0.1,0.5,'β₁')+'<svg viewBox="0 0 300 200"><rect width="300" height="200" fill="none" stroke="var(--bd)"/><line id="ln" stroke="var(--ac)" stroke-width="3"/><text x="8" y="14" fill="var(--mu)" font-size="11">Y (0..10)  ·  X (0..10)</text></svg>';
+ const u=()=>{const a=+el.querySelector('#b0').value,b=+el.querySelector('#b1').value;el.querySelector('#v_b0').textContent=a;el.querySelector('#v_b1').textContent=b;const f=x=>190-(a+b*x+5)*11,l=el.querySelector('#ln');l.setAttribute('x1',10);l.setAttribute('y1',Math.max(-50,Math.min(250,f(0))));l.setAttribute('x2',290);l.setAttribute('y2',Math.max(-50,Math.min(250,f(10))))};
+ el.querySelectorAll('input').forEach(i=>i.oninput=u);u()},
+scatter(el){const xs=[1,2,3,4,5,6,7,8],n=[.6,-.5,.3,-.7,.5,-.3,.7,-.4],rn=[5,2,7,3,6,1,4,8];
+ const D={'Positive':xs.map((x,i)=>[x,x+n[i]]),'Negative':xs.map((x,i)=>[x,9-x+n[i]]),'No relationship':xs.map((x,i)=>[x,rn[(i*3)%8]]),'Non-linear':xs.map(x=>[x,(x-4.5)**2/2.5+1])};
+ const r=p=>{const m=p.length,mx=p.reduce((s,a)=>s+a[0],0)/m,my=p.reduce((s,a)=>s+a[1],0)/m;let c=0,a=0,b=0;p.forEach(q=>{c+=(q[0]-mx)*(q[1]-my);a+=(q[0]-mx)**2;b+=(q[1]-my)**2});return c/Math.sqrt(a*b)};
+ el.innerHTML='<div class="grid">'+Object.entries(D).map(([k,p])=>`<div><svg viewBox="0 0 160 130"><rect width="160" height="130" fill="none" stroke="var(--bd)"/>${p.map(q=>`<circle cx="${15+q[0]*16}" cy="${115-q[1]*10}" r="3.5" fill="var(--ac)"/>`).join('')}</svg><div style="text-align:center">${k}<br>r = <b>${r(p).toFixed(2)}</b></div></div>`).join('')+'</div>'},
+resid(el){const P=[[1,2],[2,3.5],[3,3],[4,5.5],[5,5]];el.innerHTML=W.sl('a',0,4,0.1,1,'β₀')+W.sl('b',0,2,0.05,0.5,'β₁')+'<svg viewBox="0 0 300 200"><rect width="300" height="200" fill="none" stroke="var(--bd)"/><g id="g"></g></svg><p>RSS = <b id="rs"></b> <span class="tag">أقل قيمة ممكنة = best fit</span></p>';
+ const u=()=>{const a=+el.querySelector('#a').value,b=+el.querySelector('#b').value;el.querySelector('#v_a').textContent=a;el.querySelector('#v_b').textContent=b;let R=0,h='';const X=x=>30+x*45,Y=y=>180-y*28;
+ P.forEach(p=>{const e=p[1]-(a+b*p[0]);R+=e*e;h+=`<line x1="${X(p[0])}" y1="${Y(p[1])}" x2="${X(p[0])}" y2="${Y(a+b*p[0])}" stroke="var(--no)" stroke-width="2"/><circle cx="${X(p[0])}" cy="${Y(p[1])}" r="4" fill="var(--ac)"/>`});
+ h+=`<line x1="${X(0)}" y1="${Y(a)}" x2="${X(6)}" y2="${Y(a+b*6)}" stroke="var(--ok)" stroke-width="2.5"/>`;el.querySelector('#g').innerHTML=h;el.querySelector('#rs').textContent=R.toFixed(2)};
+ el.querySelectorAll('input').forEach(i=>i.oninput=u);u()},
+mse(el){const run=o=>{const e=o?[1,1,1,10]:[1,1,1,1];return[(e.reduce((s,a)=>s+a*a,0)/4).toFixed(2),(e.reduce((s,a)=>s+a,0)/4).toFixed(2)]};const a=run(0),b=run(1);
+ el.innerHTML=`<div class="wrap"><table><tr><th>الأخطاء</th><th>MSE</th><th>MAE</th></tr><tr><td>[1, 1, 1, 1]</td><td>${a[0]}</td><td>${a[1]}</td></tr><tr><td>[1, 1, 1, <b>10</b>] (outlier)</td><td>${b[0]}</td><td>${b[1]}</td></tr></table></div><p>الـ outlier رفع MSE من 1 إلى 25.75، لكن MAE من 1 إلى 3.25 فقط.</p>`},
+gd(el){el=document.getElementById('gdw');el.innerHTML=W.sl('al',0.01,1.1,0.01,0.1,'α')+'<svg viewBox="0 0 300 190"><rect width="300" height="190" fill="none" stroke="var(--bd)"/><path id="cv" fill="none" stroke="var(--mu)"/><g id="pt"></g></svg><p id="gl" style="direction:ltr;text-align:left;font-size:.85rem"></p><p id="gv"></p>';
+ const X=x=>150+x*22,Y=y=>Math.min(185,175-y/36*165);let d='';for(let x=-6;x<=6.01;x+=.25)d+=(d?'L':'M')+X(x)+' '+Y(x*x);el.querySelector('#cv').setAttribute('d',d);
+ const u=()=>{const al=+el.querySelector('#al').value;el.querySelector('#v_al').textContent=al;let x=4,xs=[4];for(let i=0;i<15;i++){x=x-al*2*x;xs.push(x)}
+ el.querySelector('#pt').innerHTML=xs.map((x,i)=>Math.abs(x)<=6?`<circle cx="${X(x)}" cy="${Y(x*x)}" r="${i?3:5}" fill="${i?'var(--vi)':'var(--ok)'}"/>`:'').join('');
+ el.querySelector('#gl').textContent='x: '+xs.slice(0,6).map(v=>+v.toFixed(4)).join(' → ')+' …';
+ const l=Math.abs(xs[15]);el.querySelector('#gv').innerHTML=al>1?'⚠️ Overshooting: الخطوات بتكبر وبتبعد (Additional Explanation: لأن |1−2α| > 1).':al<0.05?'🐢 Slow learning: بعد 15 خطوة لسه بعيد.':l<0.1?'✅ Convergence: وصل قريب من 0.':'α بيتحرك للـ minimum بس محتاج iterations أكتر.'};
+ el.querySelector('#al').oninput=u;u()}
+,
+stp(el,S,ex){let i=0;const d=()=>{el.innerHTML=S.slice(0,i+1).map(s=>`<div class="note">${s}</div>`).join('')+`<button ${i>=S.length-1?'disabled':''} id="nx">Next Step</button> <button id="rs">إعادة</button>`;el.querySelector('#nx').onclick=()=>{i++;d()};el.querySelector('#rs').onclick=()=>{i=0;d()}};d()},
+mat(el){el.innerHTML=W.sl('m',2,6,1,4,'m')+W.sl('n',1,4,1,2,'n')+'<div id="md"></div>';const u=()=>{const m=+el.querySelector('#m').value,n=+el.querySelector('#n').value;el.querySelector('#v_m').textContent=m;el.querySelector('#v_n').textContent=n;
+ let h=`<p class="en">Y: ${m}×1 · X: ${m}×${n+1} · β: ${n+1}×1 · ε: ${m}×1</p><div class="wrap"><table><tr><th style="background:rgba(77,124,255,.3)">1</th>${Array.from({length:n},(_,j)=>`<th>x·${j+1}</th>`).join('')}</tr>`;
+ for(let r=1;r<=m;r++)h+=`<tr><td style="background:rgba(77,124,255,.3)">1</td>${Array.from({length:n},(_,j)=>`<td>x${r}${j+1}</td>`).join('')}</tr>`;
+ el.querySelector('#md').innerHTML=h+'</table></div><p>العمود الأزرق (الواحدات) بيخلّي β₀ يتضرب في 1 فيظهر الـ intercept.</p>'};
+ el.querySelectorAll('input').forEach(i=>i.oninput=u);u()},
+ols(el){W.stp(el,[
+'SSR(β) = eᵀe &nbsp;حيث&nbsp; e = Y − Xβ <br><small>Additional: eᵀe هو Σeᵢ² لأن ضرب متجه في مقلوبه يجمع مربعات عناصره.</small>',
+'SSR = (Y − Xβ)ᵀ(Y − Xβ) = YᵀY − 2βᵀXᵀY + βᵀXᵀXβ <br><small>Additional: بنفك الأقواس، والحدّان المتقاطعان متساويان فيتجمعا في −2βᵀXᵀY.</small>',
+'∂SSR/∂β = −2XᵀY + 2XᵀXβ = 0 <br><small>Additional: بنشتق بالنسبة لـ β ونساوي بصفر لإيجاد النقطة الصغرى.</small>',
+'XᵀXβ = XᵀY <br><small>Additional: بنقسم على 2 وننقل −XᵀY للطرف التاني.</small>',
+'بافتراض أن XᵀX invertible، نضرب الطرفين في (XᵀX)⁻¹ فنحصل على الـ <b>Normal Equation</b>:<br><b class="en">β̂ = (XᵀX)⁻¹XᵀY</b>'])},
+sig(el){el.innerHTML=W.sl('z',-6,6,0.1,0,'z')+'<svg viewBox="0 0 300 160"><rect width="300" height="160" fill="none" stroke="var(--bd)"/><line x1="150" y1="5" x2="150" y2="155" stroke="var(--bd)"/><line x1="5" y1="80" x2="295" y2="80" stroke="var(--bd)" stroke-dasharray="4"/><path id="c" fill="none" stroke="var(--ac)" stroke-width="2.5"/><circle id="p" r="5" fill="var(--vi)"/><text x="8" y="16" fill="var(--mu)" font-size="10">σ=1</text><text x="8" y="154" fill="var(--mu)" font-size="10">σ=0</text><text x="154" y="76" fill="var(--mu)" font-size="10">0.5 · z=0 (boundary)</text></svg><p id="r"></p>';
+ const X=z=>150+z*24,Y=s=>155-s*150,sg=z=>1/(1+Math.exp(-z));let d='';for(let z=-6;z<=6.01;z+=.2)d+=(d?'L':'M')+X(z)+' '+Y(sg(z));el.querySelector('#c').setAttribute('d',d);
+ const u=()=>{const z=+el.querySelector('#z').value,s=sg(z);el.querySelector('#v_z').textContent=z;const p=el.querySelector('#p');p.setAttribute('cx',X(z));p.setAttribute('cy',Y(s));el.querySelector('#r').innerHTML=`σ(z) = <b>${s.toFixed(3)}</b> → <b>Class ${s>=.5?1:0}</b>`};el.querySelector('#z').oninput=u;u()},
+ex(el){const T={Raincoat:[['x = 70 (cloud coverage)، w = 0.1، b = −5'],['Step 1: z = (0.1 × 70) − 5 = 7.0 − 5 = <b>2.0</b> (موجب = احتمال مطر أعلى، لكنه لسه مش احتمال)'],['Step 2: e⁻²·⁰ ≈ 0.135 → σ(2.0) = 1/(1 + 0.135) = 1/1.135 ≈ <b>0.88</b> (88% chance of rain)'],['Step 3: 0.88 ≥ 0.50 → <b>Class 1: Wear a Raincoat</b>']],
+ Spam:[['x = 1 exclamation mark، w = 1.5، b = −2.5'],['Step 1: z = (1.5 × 1) − 2.5 = <b>−1.0</b> (سالب = أقرب لـ Not Spam)'],['Step 2: e¹·⁰ ≈ 2.718 → σ(−1.0) = 1/(1 + 2.718) = 1/3.718 ≈ <b>0.27</b>'],['Step 3: 0.27 < 0.50 → <b>Class 0: Not Spam</b>']]};
+ el.innerHTML='<p><button class="ep">Raincoat</button> <button class="ep">Spam</button></p><div id="st"></div>';el.querySelectorAll('.ep').forEach(b=>b.onclick=()=>W.stp(el.querySelector('#st'),T[b.textContent].map(a=>a[0])))},
+reg(el){const w=[3,-2,0.5,0.1];el.innerHTML=W.sl('l',0,2,0.1,0.6,'λ')+'<div class="wrap"><table id="rt"></table></div>';const u=()=>{const l=+el.querySelector('#l').value;el.querySelector('#v_l').textContent=l;
+ el.querySelector('#rt').innerHTML='<tr><th>الوزن الأصلي</th><th>L1 (يصير صفر)</th><th>L2 (يتقلص)</th></tr>'+w.map(x=>`<tr><td>${x}</td><td>${(Math.sign(x)*Math.max(Math.abs(x)-l,0)).toFixed(2)}</td><td>${(x/(1+l)).toFixed(2)}</td></tr>`).join('')};el.querySelector('#l').oninput=u;u()}
+,
+km(P,C){let A=[],ch=1,it=0;while(ch&&it++<60){ch=0;A=P.map(p=>{let b=0,bd=1e9;C.forEach((c,k)=>{const d=(p[0]-c[0])**2+(p[1]-c[1])**2;if(d<bd){bd=d;b=k}});return b});C=C.map((c,k)=>{const m=P.filter((_,i)=>A[i]===k);if(!m.length)return c;const n=[m.reduce((s,p)=>s+p[0],0)/m.length,m.reduce((s,p)=>s+p[1],0)/m.length];if(Math.abs(n[0]-c[0])>1e-9||Math.abs(n[1]-c[1])>1e-9)ch=1;return n})}
+ const w=P.reduce((s,p,i)=>s+(p[0]-C[A[i]][0])**2+(p[1]-C[A[i]][1])**2,0);return{C,A,w}},
+pts(){let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647-.5;return[[60,60],[210,60],[130,130]].flatMap(c=>Array.from({length:10},()=>[c[0]+r()*55,c[1]+r()*45]))},
+kmeans(el){const P=W.pts(),col=['#4d7cff','#f59e0b','#22c55e','#ec4899'];let K=3,C,A=null,ph=0,msg='';
+ const init=()=>{C=[];const u=new Set;while(C.length<K){const i=Math.floor(Math.random()*P.length);if(!u.has(i)){u.add(i);C.push([...P[i]])}}A=null;ph=0;msg='تم اختيار centroids عشوائية (مربعات)'};
+ const asg=()=>P.map(p=>{let b=0,bd=1e9;C.forEach((c,k)=>{const d=(p[0]-c[0])**2+(p[1]-c[1])**2;if(d<bd){bd=d;b=k}});return b});
+ const d=()=>{el.innerHTML=`<p>K = ${[2,3,4].map(k=>`<button class="kk" data-k="${k}" ${k===K?'class="p"':''}>${k}</button>`).join(' ')} <button id="n" class="p">Next Step</button> <button id="r">Random init</button></p><svg viewBox="0 0 300 190"><rect width="300" height="190" fill="none" stroke="var(--bd)"/>${P.map((p,i)=>`<circle cx="${p[0]+10}" cy="${p[1]+20}" r="4" fill="${A?col[A[i]]:'#97a1c0'}"/>`).join('')}${C.map((c,k)=>`<rect x="${c[0]+5}" y="${c[1]+15}" width="10" height="10" fill="${col[k]}" stroke="#fff" stroke-width="2"/>`).join('')}</svg><p>${C.map((_,k)=>`<span style="color:${col[k]}">● Cluster ${k+1}</span>`).join(' · ')} · ■ = Centroid</p><p><b>${msg}</b></p>`;
+  el.querySelectorAll('.kk').forEach(b=>b.onclick=()=>{K=+b.dataset.k;init();d()});el.querySelector('#r').onclick=()=>{init();d()};
+  el.querySelector('#n').onclick=()=>{if(!ph){const n=asg();const same=A&&n.every((x,i)=>x===A[i]);A=n;if(same){msg='✅ لا يوجد reassignment: النموذج جاهز';ph=2}else{ph=1;msg='خطوة 3: كل نقطة اتسندت لأقرب centroid'}}else if(ph===1){C=C.map((c,k)=>{const m=P.filter((_,i)=>A[i]===k);return m.length?[m.reduce((s,p)=>s+p[0],0)/m.length,m.reduce((s,p)=>s+p[1],0)/m.length]:c});ph=0;msg='خطوة 4: حُسبت centroids جديدة (مركز الثقل)'}d()}};init();d()},
+elbow(el){const P=W.pts();const ws=[1,2,3,4,5,6].map(k=>{let C=[P[0]];while(C.length<k){let b=0,bd=-1;P.forEach((p,i)=>{const m=Math.min(...C.map(c=>(p[0]-c[0])**2+(p[1]-c[1])**2));if(m>bd){bd=m;b=i}});C.push(P[b])}return W.km(P,C.map(c=>[...c])).w});
+ const mx=ws[0];el.innerHTML=`<svg viewBox="0 0 300 170"><rect width="300" height="170" fill="none" stroke="var(--bd)"/><polyline fill="none" stroke="var(--ac)" stroke-width="2.5" points="${ws.map((w,i)=>`${40+i*45},${150-w/mx*130}`).join(' ')}"/>${ws.map((w,i)=>`<circle cx="${40+i*45}" cy="${150-w/mx*130}" r="4" fill="var(--vi)"/><text x="${40+i*45}" y="165" font-size="10" fill="var(--tx)" text-anchor="middle">K=${i+1}</text>`).join('')}<text x="8" y="14" font-size="10" fill="var(--mu)">WCSS</text></svg><p class="en" style="font-size:.8rem">${ws.map((w,i)=>`K=${i+1}: ${w.toFixed(0)}`).join(' · ')}</p>`},
+dist(el){el.innerHTML=W.sl('dx',1,8,1,5,'Δx')+W.sl('dy',1,8,1,3,'Δy')+'<svg viewBox="0 0 300 170"><rect width="300" height="170" fill="none" stroke="var(--bd)"/><g id="g"></g></svg><p id="o"></p>';const u=()=>{const x=+el.querySelector('#dx').value,y=+el.querySelector('#dy').value;el.querySelector('#v_dx').textContent=x;el.querySelector('#v_dy').textContent=y;const a=[30,140],b=[30+x*30,140-y*15];
+ el.querySelector('#g').innerHTML=`<polyline points="${a} ${b[0]},${a[1]} ${b}" fill="none" stroke="var(--vi)" stroke-width="3"/><line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="var(--ac)" stroke-width="3"/><circle cx="${a[0]}" cy="${a[1]}" r="5" fill="var(--ok)"/><circle cx="${b[0]}" cy="${b[1]}" r="5" fill="var(--no)"/>`;
+ el.querySelector('#o').innerHTML=`<span style="color:var(--ac)">Euclidean (خط مستقيم)</span> = √(${x}²+${y}²) = <b>${Math.sqrt(x*x+y*y).toFixed(2)}</b><br><span style="color:var(--vi)">Manhattan (أفقي + رأسي)</span> = ${x}+${y} = <b>${x+y}</b>`};el.querySelectorAll('input').forEach(i=>i.oninput=u);u()},
+kme(el){const D=[[185,72],[170,56],[168,60],[179,68],[182,72],[188,77],[180,71],[180,70],[183,84]];let c=[[185,72],[170,56]],m=[[0],[1]];const f=n=>+n.toFixed(2),S=['البداية: K1 = (185, 72) و K2 = (170, 56) (النقطتان 1 و2). الصيغة: d = √((X₀−X꜀)² + (Y₀−Y꜀)²)'];
+ for(let i=2;i<D.length;i++){const p=D[i],d=c.map(q=>Math.hypot(p[0]-q[0],p[1]-q[1])),k=d[0]<=d[1]?0:1;m[k].push(i);const o=c[k];c[k]=[m[k].reduce((s,j)=>s+D[j][0],0)/m[k].length,m[k].reduce((s,j)=>s+D[j][1],0)/m[k].length];
+  S.push(`النقطة ${i+1} (${p}): بُعدها عن K1 = ${f(d[0])} وعن K2 = ${f(d[1])} ⇒ تُسند لـ <b>K${k+1}</b>. المركز الجديد لـ K${k+1} = (${f(c[k][0])}, ${f(c[k][1])})${i===2?' ← مطابق للسلايد (169, 58)':''}`)}
+ S.push(`النتيجة بهذا الأسلوب: K1 = {${m[0].map(i=>i+1)}} و K2 = {${m[1].map(i=>i+1)}}`);W.stp(el,S)},
+bayes(el){el.innerHTML=W.sl('a',0.01,1,0.01,0.3,'P(Sunny|Yes)')+W.sl('b',0.01,1,0.01,0.71,'P(Yes)')+W.sl('c',0.01,1,0.01,0.35,'P(Sunny)')+'<p id="r"></p>';const u=()=>{const a=+el.querySelector('#a').value,b=+el.querySelector('#b').value,c=+el.querySelector('#c').value;el.querySelector('#v_a').textContent=a;el.querySelector('#v_b').textContent=b;el.querySelector('#v_c').textContent=c;const p=a*b/c;el.querySelector('#r').innerHTML=`Posterior = (${a} × ${b}) / ${c} = <b>${p.toFixed(2)}</b>${p>1?' ⚠️ أكبر من 1 معناها إن الأرقام غير متسقة كاحتمالات':''}<br><small>الأرقام الافتراضية = مثال المحاضرة: P(Yes|Sunny) ≈ 0.60</small>`};el.querySelectorAll('input').forEach(i=>i.oninput=u);u()},
+nbex(el){const T={Weather:['السؤال: لو الجو Sunny هل يلعب اللاعب (Play)؟',' P(Yes|Sunny) = P(Sunny|Yes)·P(Yes)/P(Sunny)، حيث P(Sunny|Yes) = 3/10 = 0.3، P(Sunny) = 0.35، P(Yes) = 0.71 ⇒ <b>0.3 × 0.71 / 0.35 = 0.60</b>','P(No|Sunny) = P(Sunny|No)·P(No)/P(Sunny)، حيث P(Sunny|No) = 2/4 = 0.5، P(No) = 0.29 ⇒ <b>0.5 × 0.29 / 0.35 = 0.41</b>','0.60 > 0.41 ⇒ القرار: <b>Play = Yes</b>'],
+ Fruit:['السؤال: فاكهة {Yellow, Sweet, Long} هي أي نوع؟ (Mango / Banana / Others)','<b>Mango:</b> P(Yellow|Mango) = 0.53، P(Sweet|Mango) = 0.69، P(Long|Mango) = 0 ⇒ حاصل الضرب = <b>0</b>','<b>Banana:</b> P(Yellow|Banana) = 1، P(Sweet|Banana) = 0.75، P(Long|Banana) = 0.875 ⇒ 1 × 0.75 × 0.875 = <b>0.6562</b>','<b>Others:</b> 0.34 × 0.67 × 0.34 = <b>0.07742</b>','القرار: أعلى قيمة هي Banana ⇒ <b>Banana</b>. <small>ملاحظة: السلايد يقارن حواصل ضرب P(Yellow|·)·P(Sweet|·)·P(Long|·) ولا يضرب في prior الفئة ولا يشرح أكثر من ذلك، وفيه اختلافات طفيفة في تسمية بعض السطور.</small>']};
+ el.innerHTML='<p><button class="ep">Weather</button> <button class="ep">Fruit</button></p><div id="st"></div>';el.querySelectorAll('.ep').forEach(b=>b.onclick=()=>W.stp(el.querySelector('#st'),T[b.textContent]))}
+,
+cplx(el){el.innerHTML=W.sl('x',0,1,0.01,0.47,'Model complexity')+'<svg viewBox="0 0 300 180"><rect width="300" height="180" fill="none" stroke="var(--bd)"/><path id="t" fill="none" stroke="var(--ac)" stroke-width="2.5"/><path id="g" fill="none" stroke="var(--ok)" stroke-width="2.5" stroke-dasharray="5 3"/><line id="m" y1="10" y2="150" stroke="var(--vi)"/><text x="40" y="14" font-size="10" fill="var(--ac)">Training</text><text x="200" y="165" font-size="10" fill="var(--ok)">Generalization (Test)</text><text x="6" y="100" font-size="10" fill="var(--mu)" transform="rotate(-90 10 100)">Accuracy</text><text x="150" y="176" font-size="10" fill="var(--mu)" text-anchor="middle">Model complexity →</text></svg><p id="s"></p>';
+ const tr=x=>.45+.5*(1-Math.exp(-3*x)),ge=x=>tr(x)-.55*x**3,X=x=>20+x*260,Y=a=>150-(a-.3)/.7*130;let a='',b='';for(let i=0;i<=50;i++){const x=i/50;a+=(i?'L':'M')+X(x)+' '+Y(tr(x));b+=(i?'L':'M')+X(x)+' '+Y(ge(x))}
+ el.querySelector('#t').setAttribute('d',a);el.querySelector('#g').setAttribute('d',b);
+ const u=()=>{const x=+el.querySelector('#x').value;el.querySelector('#v_x').textContent=x;const m=el.querySelector('#m');m.setAttribute('x1',X(x));m.setAttribute('x2',X(x));el.querySelector('#s').innerHTML=x<.3?'<b>Underfitting:</b> الاتنين منخفضين':x<.62?'<b>Sweet spot:</b> أفضل generalization':'<b>Overfitting:</b> Training تزيد وTest تقل'};el.querySelector('#x').oninput=u;u()},
+dbound(el){const P=[[6,7],[7,8],[8,6],[7,5.5],[8.5,8.5],[5.5,6],[2,3],[3,2],[1.5,4],[3.5,4.5],[4,2.5],[2.5,1.5],[4.5,5]],Lb=[1,1,1,1,1,1,0,0,0,0,0,0,1];
+ el.innerHTML=W.sl('w1',-2,2,0.1,1,'w₁')+W.sl('w2',-2,2,0.1,1,'w₂')+W.sl('bb',-20,20,0.5,-10,'b')+'<svg viewBox="0 0 300 180"><rect width="300" height="180" fill="none" stroke="var(--bd)"/><g id="g"></g></svg><p id="r"></p>';
+ const X=x=>20+x*26,Y=y=>165-y*15,sg=z=>1/(1+Math.exp(-z));const u=()=>{const w1=+el.querySelector('#w1').value,w2=+el.querySelector('#w2').value,b=+el.querySelector('#bb').value;['w1','w2','bb'].forEach(k=>el.querySelector('#v_'+k).textContent=el.querySelector('#'+k).value);let ok=0;
+ let h=P.map((p,i)=>{const c=sg(w1*p[0]+w2*p[1]+b)>=.5?1:0;if(c===Lb[i])ok++;return `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="6" fill="${c?'var(--ac)':'var(--no)'}" stroke="${Lb[i]?'#fff':'#000'}" stroke-width="2"/>`}).join('');
+ h+=Math.abs(w2)>.05?`<line x1="${X(0)}" y1="${Y(-b/w2)}" x2="${X(10)}" y2="${Y((-b-w1*10)/w2)}" stroke="var(--vi)" stroke-width="2.5"/>`:Math.abs(w1)>.05?`<line x1="${X(-b/w1)}" y1="0" x2="${X(-b/w1)}" y2="180" stroke="var(--vi)" stroke-width="2.5"/>`:'';
+ el.querySelector('#g').innerHTML=h;el.querySelector('#r').innerHTML=`الخط البنفسجي = decision boundary حيث z = w₁x₁ + w₂x₂ + b = 0. لون النقطة = التوقع (أزرق Class 1، أحمر Class 0)، والحدّ الأبيض/الأسود = الـ label الحقيقي. تصنيف صحيح: <b>${ok}/${P.length}</b>`};el.querySelectorAll('input').forEach(i=>i.oninput=u);u()},
+l12(el){const w=[3,-2,.5,.1];el.innerHTML=W.sl('l',0,2,0.1,0.6,'λ')+'<svg viewBox="0 0 300 170"><rect width="300" height="170" fill="none" stroke="var(--bd)"/><line x1="10" y1="85" x2="290" y2="85" stroke="var(--bd)"/><g id="g"></g><text x="12" y="14" font-size="10" fill="var(--mu)">■ الأصلي  <tspan fill="var(--ac)">■ L1</tspan>  <tspan fill="var(--vi)">■ L2</tspan></text></svg><p style="font-size:.85rem">أوزان افتراضية [3, −2, 0.5, 0.1]. هذه المعادلات توضيحية (Additional Explanation): L1 تقتطع بمقدار λ فتصفّر الصغير، وL2 تقسم على (1+λ) فتقلص الكل بنسبة.</p>';
+ const u=()=>{const l=+el.querySelector('#l').value;el.querySelector('#v_l').textContent=l;const bar=(x,v,c)=>`<rect x="${x}" y="${v>=0?85-v*22:85}" width="14" height="${Math.abs(v)*22}" fill="${c}"/>`;
+ el.querySelector('#g').innerHTML=w.map((v,i)=>{const x=30+i*68;return bar(x,v,'#97a1c0')+bar(x+16,Math.sign(v)*Math.max(Math.abs(v)-l,0),'#4d7cff')+bar(x+32,v/(1+l),'#8b5cf6')+`<text x="${x+22}" y="162" font-size="10" fill="var(--tx)" text-anchor="middle">w${i+1}</text>`}).join('')};el.querySelector('#l').oninput=u;u()},
+bdiag(el){const bx=(c,t,s)=>`<div style="border:2px solid ${c};border-radius:12px;padding:8px;flex:1;min-width:120px;text-align:center"><b class="en" style="color:${c}">${t}</b><br><small>${s}</small></div>`;
+ el.innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;direction:ltr">${bx('#22c55e','P(A|B)','Posterior<br>بعد رؤية الدليل')}<b>=</b>${bx('#4d7cff','P(B|A)','Likelihood<br>الدليل لو الفرضية صح')}<b>×</b>${bx('#8b5cf6','P(A)','Prior<br>قبل رؤية الدليل')}<b>÷</b>${bx('#f59e0b','P(B)','Marginal<br>احتمال الدليل')}</div><p>جرّب مثال Weather (Sunny):</p><div id="bw"></div>`;W.bayes(el.querySelector('#bw'))},
+svu(el){const P=[[1,1],[1.5,2],[2,1.2],[2.5,2.2],[1.2,2.6],[2.2,.6],[5,4.5],[5.5,3.6],[6,4.8],[6.5,3.8],[5.2,3.2],[6.2,4.2]],Lb=[0,0,0,0,0,0,1,1,1,1,1,1];let m='s',f=0;
+ const d=()=>{const C=f?W.km(P,[[...P[0]],[...P[11]]]).A:null;el.innerHTML=`<p><button class="${m==='s'?'p':''}" id="a">Supervised</button> <button class="${m==='u'?'p':''}" id="b">Unsupervised</button> ${m==='u'?'<button id="c">اكتشف الأنماط</button>':''}</p><svg viewBox="0 0 300 150"><rect width="300" height="150" fill="none" stroke="var(--bd)"/>${m==='s'?'<line x1="130" y1="145" x2="190" y2="5" stroke="var(--vi)" stroke-dasharray="5 3" stroke-width="2"/>':''}${P.map((p,i)=>{const c=m==='s'?(Lb[i]?'#4d7cff':'#ef4444'):(f?(C[i]?'#4d7cff':'#ef4444'):'#97a1c0');return `<circle cx="${20+p[0]*38}" cy="${135-p[1]*24}" r="6" fill="${c}"/>`}).join('')}</svg><p>${m==='s'?'<b>Inputs + Labels:</b> كل نقطة معاها label (لونها)، والنموذج يتعلم حدًا يفصل الفئات.':f?'<b>اتكتشفت مجموعات</b> من التشابه بدون أي labels (الألوان من الخوارزمية).':'<b>Unlabeled data:</b> مفيش labels. الخوارزمية بتدوّر على أنماط.'}</p>`;
+  el.querySelector('#a').onclick=()=>{m='s';d()};el.querySelector('#b').onclick=()=>{m='u';f=0;d()};const c=el.querySelector('#c');if(c)c.onclick=()=>{f=1;d()}};d()}
+
+};
+function qcard(i){const q=QB[i],r=S.bank[i];return `<div class="card" id="qb${i}"><span class="tag">Lecture ${q[3]||3} · Q${q[4]||i+1} · من تمارين المحاضرة</span><p class="en" style="display:block;direction:ltr;text-align:left">${q[0]}</p>${q[1].map((o,k)=>`<button class="opt en ${r?(k===q[2]?'ok':(k===r.k?'no':'')):''}" ${r?'disabled':''} onclick="bq(${i},${k})" style="direction:ltr;text-align:left">${'ABCD'[k]}) ${o}</button>`).join('')}${r?`<p>${r.ok?'✅ Correct':'❌ Incorrect — الإجابة الصحيحة: '+'ABCD'[q[2]]}</p>`:''}</div>`}
+function bq(i,k){S.bank[i]={k,ok:k===QB[i][2]};save();document.getElementById('qb'+i).outerHTML=qcard(i);bs()}
+function bs(){const e=document.getElementById('bsum');if(!e)return;const a=Object.values(S.bank);e.textContent=`تم حل ${a.length}/${QB.length} · الصح ${a.filter(x=>x.ok).length}`}
+function bankHtml(){return `<div class="card"><b>بنك أسئلة المحاضرتين 3 و4 (57 سؤالًا منقولة من الـ PDF بمفتاح الإجابة الأصلي)</b> <span id="bsum" class="tag"></span></div>`+QB.map((_,i)=>qcard(i)).join('')}
+
+const F=[
+[1,'متوسط K-Fold','Average = (score₁ + score₂ + … + score_K) / K','score = دقة كل fold · K = عدد الفولدز','لتلخيص أداء النموذج بعد كل الـ iterations','(80 + 90 + 85) / 3 = 85%',''],
+[2,'معادلة Simple Linear Regression','Yi = β₀ + β₁Xi','Yi: الناتج · β₀: Intercept · β₁: Slope · Xi: المدخل','لتوصيف علاقة خطية بين متغير مستقل واحد وتابع','Y = 1 + 0.5X: لو X=4 فـ Y=3 (أرقام توضيحية)','مثال: Additional Explanation'],
+[2,'Residual','eᵢ = yᵢ − ŷᵢ','yᵢ: القيمة الفعلية · ŷᵢ: القيمة المتوقعة','لقياس خطأ نقطة واحدة؛ والـ best-fit line يقلل RSS (مجموع مربعاتها)','فعلي 5، متوقع 4 ⇒ residual = 1 (توضيحي)','الصيغة مأخوذة من تعريف المحاضرة اللفظي'],
+[2,'Hypothesis','hθ(x) = θ₀ + θ₁x','θ₀, θ₁: المعاملات · x: المدخل (مثل المساحة)','لتمثيل النموذج في مثال أسعار البيوت','(i) في x⁽ⁱ⁾ هو index وليس أُس','الصيغة من ملخصك؛ لم تظهر في النص المستخرج من السلايد'],
+[2,'MSE','MSE = (1/n) Σᵢ₌₁ⁿ (yᵢ − ŷᵢ)²','n: عدد العينات · yᵢ: فعلي · ŷᵢ: متوقع','Regression؛ يعاقب الأخطاء الكبيرة أكثر','أخطاء [1,1,1,10] ⇒ MSE = 25.75','المثال: Additional Explanation'],
+[2,'MAE','MAE = (1/n) Σᵢ₌₁ⁿ |yᵢ − ŷᵢ|','نفس رموز MSE','Regression؛ أقل حساسية للـ outliers','أخطاء [1,1,1,10] ⇒ MAE = 3.25','المثال: Additional Explanation'],
+[2,'Weighted Cross-Entropy','Lᵢ = −Weight_yᵢ × [ yᵢ log(ŷᵢ) + (1 − yᵢ) log(1 − ŷᵢ) ]','yᵢ: label (0/1) · ŷᵢ: احتمال الفئة الموجبة · Weight: وزن الفئة','Imbalanced data لزيادة عقوبة أخطاء الـ minority','سالب 95% وزنها 0.05، موجب 5% وزنها 0.95',''],
+[2,'قاعدة Gradient Descent','new x = old x − α × gradient','α: Learning rate · gradient: الميل (المشتقة)','لتحديث المعاملات تكراريًا لتقليل الـ cost','f(x)=x² ، f′(x)=2x ، x=4 ، α=0.1 ⇒ 4 → 3.2 → 2.56 → 2.048 → 1.6384',''],
+[3,'Multiple Linear Regression (Scalar)','yᵢ = β₀ + β₁xᵢ₁ + β₂xᵢ₂ + … + βₙxᵢₙ + εᵢ','yᵢ: الهدف · β₀: intercept · βⱼ: partial coefficient · εᵢ: error · m: المشاهدات · n: الـ features','عند وجود أكثر من feature','سعر البيت من المساحة وعدد الغرف والعمر والمسافة',''],
+[3,'Matrix Form','Y = Xβ + ε','Y: m×1 · X: m×(n+1) (أول عمود = 1) · β: (n+1)×1 · ε: m×1','لكتابة m معادلات في معادلة واحدة','عمود الواحدات يقابل β₀',''],
+[3,'SSR','SSR(β) = Σᵢ eᵢ² = eᵀe ، e = Y − Xβ','e: متجه الـ residuals','هدف OLS: تقليله','',''],
+[3,'فك SSR','SSR = YᵀY − 2βᵀXᵀY + βᵀXᵀXβ','نفس الرموز','الخطوة قبل الاشتقاق','',''],
+[3,'الـ Gradient = 0','∂SSR/∂β = −2XᵀY + 2XᵀXβ = 0 ⇒ XᵀXβ = XᵀY','∂: مشتقة جزئية','لإيجاد β الذي يقلل SSR','',''],
+[3,'Normal Equation','β̂ = (XᵀX)⁻¹XᵀY','β̂: المعاملات المقدّرة · (XᵀX)⁻¹: معكوس (يشترط non-singular)','الحل المغلق لـ OLS، تعقيده O(m·n²)','',''],
+[3,'Linear score','z = wᵀx + b','w: الأوزان · b: bias · x: الـ features','المرحلة الأولى في Logistic Regression','x=70، w=0.1، b=−5 ⇒ z = 2.0',''],
+[3,'Sigmoid','σ(z) = 1 / (1 + e⁻ᶻ)','z: الـ linear score','تحويل z لاحتمال بين 0 و1؛ ≥ 0.5 ⇒ Class 1','σ(2.0) ≈ 0.88 ⇒ Class 1 · σ(−1.0) ≈ 0.27 ⇒ Class 0',''],
+[3,'Binary Cross-Entropy','J(w) = −(1/m) Σᵢ [ y⁽ⁱ⁾ log(σ(z⁽ⁱ⁾)) + (1 − y⁽ⁱ⁾) log(1 − σ(z⁽ⁱ⁾)) ]','m: عدد العينات · y⁽ⁱ⁾: label · σ(z⁽ⁱ⁾): الاحتمال المتوقع','Cost الخاص بـ Logistic Regression (بدل MSE)','',''],
+[3,'L1 Penalty (Lasso)','Penalty = λ Σ |w|','λ: قوة العقوبة · w: الأوزان','لتقليل overfitting وللـ feature selection (يصفّر معاملات)','',''],
+[3,'L2 Penalty (Ridge)','Penalty = λ Σ w²','نفس الرموز','يقلل المعاملات تدريجيًا ويخفف multicollinearity','',''],
+[4,'Euclidean Distance','d = √( (X₀ − X꜀)² + (Y₀ − Y꜀)² )','(X₀,Y₀): النقطة · (X꜀,Y꜀): الـ centroid','لإسناد النقطة لأقرب centroid','(168,60) و(185,72): √(17²+12²) = 20.80 · و(170,56): √(2²+4²) = 4.47',''],
+[4,'Manhattan Distance','d = |X₀ − X꜀| + |Y₀ − Y꜀|','نفس الرموز','بديل لـ Euclidean (حركة أفقية ورأسية)','Δx=5، Δy=3 ⇒ 8','Additional Explanation: ذُكر الاسم في المحاضرة دون الصيغة'],
+[4,'Centroid الجديد','centroid = متوسط إحداثيات نقط العنقود','مركز الثقل (center of gravity)','بعد كل إسناد لتحديث مركز العنقود','((170+168)/2 , (56+60)/2) = (169, 58)','مأخوذ من مثال المحاضرة'],
+[4,'WCSS','WCSS = Σ_{Pᵢ∈C₁} d(Pᵢ,C₁)² + Σ_{Pᵢ∈C₂} d(Pᵢ,C₂)² + Σ_{Pᵢ∈C₃} d(Pᵢ,C₃)²','Pᵢ: نقطة · Cₖ: مركز العنقود k','Elbow Method لاختيار K (الصيغة لـ 3 عناقيد)','','أعيد كتابتها من وصف السلايد (الصيغة صورة)'],
+[4,'Bayes’ Theorem','P(A|B) = P(B|A) × P(A) / P(B)','P(A|B): Posterior · P(B|A): Likelihood · P(A): Prior · P(B): Marginal','أساس Naïve Bayes','P(Yes|Sunny) = 0.3 × 0.71 / 0.35 = 0.60',''],
+[4,'Naïve Bayes (استقلال الـ features)','P(X|Class) = P(x₁|Class) × P(x₂|Class) × … × P(xₙ|Class)','xⱼ: الـ features','لحساب احتمال مجموعة features بافتراض الاستقلال','Banana: 1 × 0.75 × 0.875 = 0.6562','الصيغة العامة مأخوذة من طريقة الضرب في مثال Fruit']
+];
+let FL=0;
+function fapply(){const q=(document.getElementById('fq').value||'').toLowerCase();document.querySelectorAll('.fc2').forEach(c=>{c.style.display=((!FL||+c.dataset.l===FL)&&c.dataset.s.includes(q))?'':'none'})}
+function fsel(l){FL=l;document.querySelectorAll('.fb').forEach(b=>b.classList.toggle('p',+b.dataset.l===l));fapply()}
+function fcopy(i,b){const t=F[i][2];const ok=()=>{b.textContent='Copied ✓';setTimeout(()=>b.textContent='Copy Formula',1500)};
+ try{navigator.clipboard.writeText(t).then(ok,()=>fb(t,ok))}catch(e){fb(t,ok)}}
+function fb(t,ok){try{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();ok()}catch(e){alert(t)}}
+function form(a){a.innerHTML=`<h2>Formula Sheet</h2><p>كل المعادلات من المحاضرات. أي معادلة أو مثال من خارج السلايدات عليه تنبيه واضح.</p>
+<p>${[0,1,2,3,4].map(l=>`<button class="fb ${l===FL?'p':''}" data-l="${l}" onclick="fsel(${l})">${l?'Lecture '+l:'الكل'}</button>`).join(' ')}</p>
+<input id="fq" placeholder="ابحث عن معادلة…" oninput="fapply()" style="width:100%;padding:8px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit">`+F.map((f,i)=>`<div class="card fc2" data-l="${f[0]}" data-s="${(f[1]+' '+f[2]).toLowerCase().replace(/"/g,'')}"><span class="tag">Lecture ${f[0]}</span> ${f[6]?`<span class="tag" style="border-color:var(--vi)">${f[6]}</span>`:''}<h3 style="margin:6px 0">${f[1]}</h3><pre>${f[2].replace(/&/g,'&amp;').replace(/</g,'&lt;')}</pre><p><b>الرموز:</b> ${f[3]}</p><p><b>متى تُستخدم؟</b> ${f[4]}</p>${f[5]?`<p><b>مثال:</b> <span class="en">${f[5]}</span></p>`:''}<button onclick="fcopy(${i},this)">Copy Formula</button></div>`).join('');fapply()}
+
+let X={ph:'set',cfg:{lec:0,n:10,t:0},tm:null};
+const avgEx=()=>S.exams&&S.exams.length?Math.round(S.exams.reduce((s,e)=>s+e.pct,0)/S.exams.length)+'%':'—';
+function xpool(lec){const r=[];L.forEach((l,i)=>{if((l.lec||1)<=2)r.push({lec:l.lec||1,topic:l.t,li:i,q:l.q.q,o:l.q.o,a:l.q.a,w:l.q.w,src:'Practice Question',en:0})});
+ QB.forEach(q=>{const n=q[3]||3;r.push({lec:n,topic:'Lecture '+n,li:n===3?15:24,q:q[0],o:q[1],a:q[2],w:'مفتاح إجابة تمارين المحاضرة (بدون شرح في المصدر).',src:'من تمارين المحاضرة',en:1})});return lec?r.filter(x=>x.lec===lec):r}
+const fmt=ms=>{const s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+function exam(a){if(X.ph==='set')xset(a);else if(X.ph==='run')xrun(a);else xdone(a)}
+function xcfg(k,v){X.cfg[k]=v;render()}
+function xset(a){const c=X.cfg,av=xpool(c.lec).length,ns=[5,10,20,30].filter(n=>n<av);const bt=(k,v,t)=>`<button class="${c[k]===v?'p':''}" onclick="xcfg('${k}',${v})">${t}</button>`;
+ a.innerHTML=`<h2>Exam Mode</h2><div class="card"><p><b>المحاضرات</b><br>${[0,1,2,3,4].map(l=>bt('lec',l,(l?'Lecture '+l:'الأربع محاضرات')+' ('+xpool(l).length+')')).join(' ')}</p>
+ <p><b>عدد الأسئلة</b><br>${ns.map(n=>bt('n',n,n)).join(' ')} ${bt('n',av,'الكل ('+av+')')}</p>
+ <p><b>المؤقت</b><br>${[0,10,20,30].map(t=>bt('t',t,t?t+' دقيقة':'بدون')).join(' ')}</p>
+ <button class="p" onclick="xstart()">Start Exam</button></div>
+ <div class="note">أسئلة Lecture 3 و4 منقولة من تمارين المحاضرة بمفتاحها الأصلي. أسئلة Lecture 1 و2 هي Practice Questions مشتقة من المحتوى. مفيش مستوى صعوبة لأن المصدر لا يصنّف الأسئلة بصعوبة. ${S.exams&&S.exams.length?`<br>آخر نتيجة: ${S.exams[S.exams.length-1].score}/${S.exams[S.exams.length-1].total} · متوسط الامتحانات: ${avgEx()}`:''}</div>`}
+function xstart(){const c=X.cfg;let p=xpool(c.lec);for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]]}
+ X={ph:'run',cfg:c,list:p.slice(0,Math.min(c.n,p.length)),ans:{},mark:{},i:0,start:Date.now(),conf:0,tm:null};
+ if(c.t){X.end=Date.now()+c.t*60000;X.tm=setInterval(()=>{const r=X.end-Date.now(),e=document.getElementById('tm');if(e)e.textContent=fmt(r);if(r<=0)xsub(true)},1000)}render()}
+function xrun(a){const q=X.list[X.i],n=X.list.length;
+ a.innerHTML=`<div style="display:flex;justify-content:space-between;flex-wrap:wrap"><b>سؤال ${X.i+1}/${n}</b>${X.cfg.t?`<b>⏱ <span id="tm">${fmt(X.end-Date.now())}</span></b>`:''}</div>
+ <div style="display:flex;flex-wrap:wrap;gap:4px;margin:8px 0">${X.list.map((_,i)=>`<button onclick="X.i=${i};render()" style="padding:2px 9px;${i===X.i?'border-color:var(--ac);':''}${X.ans[i]!=null?'background:rgba(77,124,255,.25);':''}${X.mark[i]?'outline:2px solid var(--vi);':''}">${i+1}</button>`).join('')}</div>
+ <div class="card"><span class="tag">${q.src}</span> <span class="tag">Lecture ${q.lec}</span><p ${q.en?'class="en" style="display:block;direction:ltr;text-align:left"':''}>${q.q}</p>
+ ${q.o.map((o,k)=>`<button class="opt ${q.en?'en':''}" style="${X.ans[X.i]===k?'border-color:var(--ac);background:rgba(77,124,255,.2);':''}${q.en?'direction:ltr;text-align:left':''}" onclick="X.ans[X.i]=${k};X.conf=0;render()">${q.en?'ABCD'[k]+') ':''}${o}</button>`).join('')}</div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><button ${X.i?'':'disabled'} onclick="X.i--;render()">Previous</button><button ${X.i<n-1?'':'disabled'} onclick="X.i++;render()">Next</button><button onclick="X.mark[X.i]=!X.mark[X.i];render()">${X.mark[X.i]?'✓ Marked':'Mark for Review'}</button><button class="p" onclick="xsub()">Submit Exam</button></div>
+ ${X.conf?`<div class="warn">لسه ${n-Object.keys(X.ans).length} أسئلة بدون إجابة${Object.values(X.mark).filter(Boolean).length?' و'+Object.values(X.mark).filter(Boolean).length+' عليها Mark for Review':''}. اضغط Submit Exam تاني للتأكيد.</div>`:''}`}
+function xsub(f){const n=X.list.length;if(!f&&!X.conf&&(Object.keys(X.ans).length<n||Object.values(X.mark).some(Boolean))){X.conf=1;render();return}
+ clearInterval(X.tm);X.took=Date.now()-X.start;X.score=X.list.filter((q,i)=>X.ans[i]===q.a).length;X.ph='done';
+ S.exams=(S.exams||[]).concat([{score:X.score,total:n,pct:Math.round(X.score/n*100),t:Date.now()}]).slice(-20);save();render()}
+function xdone(a){const n=X.list.length,pc=Math.round(X.score/n*100),wr={};X.list.forEach((q,i)=>{if(X.ans[i]!==q.a){wr[q.topic]=wr[q.topic]||q}});
+ a.innerHTML=`<h2>النتيجة</h2><div class="card"><h1 style="margin:0">${X.score}/${n} · ${pc}%</h1><div class="bar"><i style="width:${pc}%"></i></div><p>✅ صح: ${X.score} · ❌ غلط/بدون إجابة: ${n-X.score} · ⏱ الوقت: ${fmt(X.took)}</p><button class="p" onclick="X={ph:'set',cfg:X.cfg,tm:null};render()">امتحان جديد</button></div>
+ <div class="card"><b>مواضيع تحتاج مراجعة</b>${Object.keys(wr).length?Object.values(wr).map(q=>`<p><button onclick="go('lesson',${q.li})">${q.topic}</button></p>`).join(''):'<p>ممتاز! مفيش أخطاء 🎉</p>'}</div>
+ ${X.list.map((q,i)=>{const ok=X.ans[i]===q.a;return `<div class="card"><span class="tag">${ok?'✅ صح':X.ans[i]==null?'⚪ بدون إجابة':'❌ غلط'}</span> <span class="tag">${q.src} · Lecture ${q.lec}</span><p ${q.en?'class="en" style="display:block;direction:ltr;text-align:left"':''}>${i+1}. ${q.q}</p>${q.o.map((o,k)=>`<div class="opt ${k===q.a?'ok':k===X.ans[i]?'no':''} ${q.en?'en':''}" style="padding:6px 12px;border:1px solid var(--bd);border-radius:10px;margin:4px 0;${q.en?'direction:ltr;text-align:left':''}">${q.en?'ABCD'[k]+') ':''}${o}</div>`).join('')}<p><b>الإجابة الصحيحة:</b> ${q.en?'ABCD'[q.a]:q.o[q.a]}<br>${q.w}</p></div>`}).join('')}`}
+
+const N_DEF=[['Machine Learning','خوارزميات تحسّن أداءها في مهمة معينة مع الخبرة (improve performance at some task with experience)'],['Supervised','تدريب بأمثلة مدخلات + labels معنونة'],['Unsupervised','بيانات بلا labels، تكتشف أنماط وتشابهات'],['Reinforcement','Learner يتفاعل مع Environment ويتعلم بالـ Reward'],['Deep Learning','نموذج مبني على Artificial Neural Networks'],['Classification','توقع class label من فئات محددة (Binary / Multiclass)'],['Regression','توقع رقم مستمر'],['Generalization','دقة النموذج على بيانات جديدة لم يرها'],['Overfitting','نموذج معقد يحفظ التدريب (والـ noise) ويفشل على الجديد'],['Underfitting','نموذج بسيط لا يلتقط الأنماط'],['K-Fold CV','تقسيم لـ K أجزاء؛ كل مرة fold للاختبار والباقي للتدريب ثم المتوسط'],['Residual','الفرق بين القيمة الفعلية والمتوقعة'],['RSS / SSR','مجموع مربعات الـ residuals؛ يُقلل في best-fit'],['Cost Function','رقم واحد يقيس خطأ التوقعات؛ نقلله أثناء التدريب'],['Gradient Descent','تحديث المعاملات تكراريًا عكس الـ gradient لتقليل الـ cost'],['Hyperplane','ما ينتجه MLR في فضاء (n+1) بُعد'],['OLS','تقليل SSR؛ الحل β̂ = (XᵀX)⁻¹XᵀY'],['Sigmoid','σ(z)=1/(1+e⁻ᶻ) تحصر الناتج بين 0 و1'],['Decision boundary','عند σ(z)=0.5 أي z=0'],['L1 / L2','عقوبات λΣ|w| / λΣw² لتقليل overfitting'],['K-Means','Unsupervised clustering بـ K centroids محددة مسبقًا'],['WCSS','مجموع مربعات المسافات داخل العناقيد (للـ Elbow)'],['Silhouette','مدى ملاءمة النقطة لعنقودها، من −1 إلى +1'],['Naïve Bayes','Supervised generative classifier مبني على Bayes مع استقلال شرطي للـ features']];
+const N_CMP=[['Underfitting vs Overfitting','بسيط جدًا · Train منخفضة · Test منخفضة · الحل: زيادة التعقيد','معقد جدًا · Train عالية جدًا · Test منخفضة · الحل: تقليل التعقيد/Regularization'],['Classification vs Regression','ناتج فئات منفصلة (spam/not)','ناتج رقم مستمر (دخل، سعر)'],['Pretrained / Transfer / Fine-tuning','Pretrained = الأداة · Transfer = الاستراتيجية','Fine-tuning = إكمال التدريب على بيانات جديدة'],['MSE vs MAE','MSE: تربيع، يعاقب الأخطاء الكبيرة','MAE: مطلق، أقل حساسية للـ outliers'],['Batch GD vs SGD','كل الداتا في كل iteration، مستقر','مثال واحد، أسرع لكن noisy'],['Linear vs Logistic','Regression · ناتج مستمر · SSR · Normal Equation','Classification · احتمال 0–1 · BCE · gradient descent'],['L1 vs L2','يصفّر معاملات (Feature selection)','يقلل تدريجيًا ويمنع سيطرة feature'],['Gaussian / Multinomial / Bernoulli','Gaussian: features مستمرة · Multinomial: تكرار كلمات','Bernoulli: Boolean (الكلمة موجودة أم لا)'],['K-Means vs Naïve Bayes','Unsupervised · Clustering · Unlabeled · Centroids','Supervised · Classification · Labeled · Probabilities']];
+const N_MIS=['Overfitting = دقة عالية جدًا على التدريب وضعيفة على الاختبار (مش دقة منخفضة على التدريب)','Pretrained model ≠ Transfer learning','(i) في x⁽ⁱ⁾ هو index وليس أُس','Accuracy قد تكون مضللة مع imbalanced data','تكرار نفس البيانات لا يزيد تنوعها ولا يسمح بنموذج أعقد','α كبير جدًا ⇒ overshooting، وα صغير جدًا ⇒ بطء','MSE مع sigmoid ⇒ سطح non-convex؛ لذلك نستخدم BCE','عمود الواحدات في X ضروري لاستيعاب β₀','Linear regression لا تناسب classification لأن ناتجها unbounded','K-Means: K لازم يتحدد مسبقًا، وحساسة للـ outliers ولاختيار الـ centroids الأولى','K-Means مش Classification (مفيش labels)','Naïve Bayes لا يتعلم العلاقات بين الـ features بسبب افتراض الاستقلال'];
+const N_CONF=[['Posterior / Likelihood / Prior / Marginal','P(A|B) posterior · P(B|A) likelihood · P(A) prior · P(B) marginal'],['Intra vs Inter cluster','نريد intra-similarity عالية و inter-similarity منخفضة'],['Linear vs Logistic Regression','Logistic رغم اسمها هي Classification'],['WCSS vs Silhouette','WCSS للـ Elbow (الأقل أفضل مع الكوع) · Silhouette الأعلى أفضل'],['β₁ في سلايد Lecture 2','السلايد كتب Slope/Intercept والمقصود Slope'],['Test vs Validation set','Test للتقييم النهائي · Validation لضبط hyperparameters']];
+const N_NUM=['K-Fold: (80 + 90 + 85) / 3 = 85%','Gradient Descent (x=4, α=0.1): 4 → 3.2 → 2.56 → 2.048 → 1.6384','Weighted CE: weight_neg = 0.05، weight_pos = 0.95 (بيانات 95% / 5%)','Raincoat: z = 2.0 ⇒ σ ≈ 0.88 ⇒ Class 1','Spam: z = −1.0 ⇒ σ ≈ 0.27 ⇒ Class 0','K-Means: نقطة (168,60): 20.80 من K1 و4.47 من K2 ⇒ K2، المركز الجديد (169, 58)','Weather: P(Yes|Sunny)=0.60 مقابل P(No|Sunny)=0.41 ⇒ Play = Yes','Fruit: Mango = 0 · Banana = 0.6562 · Others = 0.07742 ⇒ Banana'];
+const N_FC=[['ما الفرق بين Pretrained و Transfer Learning؟','Pretrained = الأداة، Transfer = الاستراتيجية'],['متى ينتهي K-Means؟','عندما لا يحدث reassignment'],['ماذا تعني WCSS؟','Within Cluster Sum of Squares'],['مدى Silhouette؟','−1 إلى +1'],['لماذا Naïve؟','افتراض استقلال الـ features شرطيًا'],['أين decision boundary؟','σ(z) = 0.5 أي z = 0'],['لماذا BCE بدل MSE مع sigmoid؟','MSE ينتج سطح non-convex'],['وظيفة عمود الواحدات؟','يستوعب β₀'],['ماذا يفعل L1؟','يصفّر بعض المعاملات (feature selection)'],['ماذا يفعل L2؟','يقلص المعاملات تدريجيًا'],['Normal Equation؟','β̂ = (XᵀX)⁻¹XᵀY'],['قاعدة Gradient Descent؟','new x = old x − α × gradient'],['أي Naïve Bayes لتكرار الكلمات؟','Multinomial'],['أي Naïve Bayes للـ Boolean؟','Bernoulli']];
+const N_RF=[['Overfitting = دقة عالية على التدريب ومنخفضة على الاختبار',1],['Pretrained model هو نفسه Transfer learning',0],['Residual = القيمة الفعلية − المتوقعة',1],['MAE أكثر حساسية للـ outliers من MSE',0],['ناتج Linear regression مناسب مباشرة للـ classification لأنه محدود بين 0 و1',0],['الـ decision boundary في Logistic عند z = 0',1],['L1 يمكنه جعل بعض المعاملات صفرًا',1],['K-Means يحتاج labels',0],['Silhouette score بين −1 و+1',1],['Naïve Bayes يفترض استقلالًا شرطيًا بين الـ features',1],['مع imbalanced data، الدقة العالية تعني دائمًا نموذجًا جيدًا',0],['SGD يحسب الـ gradient من مثال تدريب واحد في كل iteration',1],['Normal Equation تشترط أن XᵀX قابلة للعكس',1],['Gaussian NB مناسب لتكرار الكلمات',0],['لتقليل Overfitting نزيد تعقيد النموذج',0],['K-Means تضمن الوصول لنتيجة في كل تشغيل (حسب المحاضرة)',1]];
+let RF={i:0,s:0,done:0};
+function rfd(){const e=document.getElementById('rf');if(!e)return;if(RF.i>=N_RF.length){e.innerHTML=`<h3>النتيجة: ${RF.s}/${N_RF.length}</h3><button onclick="RF={i:0,s:0};rfd()">إعادة</button>`;return}
+ e.innerHTML=`<p><b>${RF.i+1}/${N_RF.length}</b> · ${N_RF[RF.i][0]}</p><button class="p" onclick="rfa(1)">صح</button> <button onclick="rfa(0)">غلط</button><p id="rfm"></p>`}
+function rfa(v){const ok=N_RF[RF.i][1]===v;if(ok)RF.s++;document.getElementById('rf').innerHTML=`<p>${N_RF[RF.i][0]}</p><p><b>${ok?'✅ صح':'❌ غلط'}</b> — الإجابة: ${N_RF[RF.i][1]?'صح':'غلط'}</p><button class="p" onclick="RF.i++;rfd()">التالي</button>`}
+function nprint(){try{window.print()}catch(e){alert('افتح الرابط في تبويب مستقل ثم اضغط Ctrl+P')}}
+function night(a){const T=(h,rows)=>`<div class="wrap"><table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table></div>`;
+ a.innerHTML=`<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px" class="noprint"><h2 style="margin:0">NIGHT BEFORE THE EXAM</h2><button class="p" onclick="nprint()">PRINT REVISION SHEET</button></div><h2 class="onlyprint" style="display:none">ML Exam Rescue: Revision Sheet</h2>
+ <div class="card"><h3>1. أهم التعريفات</h3>${T(['المصطلح','التعريف'],N_DEF)}</div>
+ <div class="card"><h3>2. أهم المقارنات</h3>${T(['المقارنة','الأول','الثاني'],N_CMP)}</div>
+ <div class="card"><h3>3. القوانين والمعادلات</h3>${T(['الاسم','الصيغة'],F.map(f=>[f[1],`<span class="en">${f[2].replace(/</g,'&lt;')}</span>`]))}</div>
+ <div class="card"><h3>4. أكثر الأخطاء الشائعة</h3><ul>${N_MIS.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+ <div class="card"><h3>5. نقاط يسهل الخلط بينها</h3>${T(['النقطة','التوضيح'],N_CONF)}</div>
+ <div class="card"><h3>6. أهم الأمثلة الرقمية</h3><ul>${N_NUM.map(x=>`<li class="en" style="direction:ltr;text-align:left">${x}</li>`).join('')}</ul></div>
+ <div class="card noprint"><h3>7. Quick Flashcards</h3><div class="grid">${N_FC.map(c=>`<div class="card fc" style="margin:0" onclick="if(this.dataset.f){this.innerHTML='<b>${c[0]}</b>';this.dataset.f=''}else{this.innerHTML='${c[1]}';this.dataset.f=1}"><b>${c[0]}</b></div>`).join('')}</div></div>
+ <div class="card noprint"><h3>8. Rapid Fire Quiz</h3><span class="tag">Practice Question: مشتقة من المحتوى</span><div id="rf"></div></div>`;RF={i:0,s:0};rfd()}
+
+const LAB=[
+['1. Underfitting / Good Fit / Overfitting','Underfitting: نموذج بسيط لا يلتقط النمط · Good fit: نموذج متوازن · Overfitting: يتبع كل نقطة والـ noise.','fit'],
+['2. Model Complexity vs Performance','تمثيل لشكل المحاضرة: كل ما زاد التعقيد تتحسن دقة التدريب، بينما دقة التعميم تصل لـ sweet spot ثم تنزل. (المحاضرة رسمته بالـ Accuracy، والمنحنى هنا توضيحي.)','cplx'],
+['3. K-Fold Cross Validation','K=5: كل fold يأخذ دوره في الاختبار والباقي تدريب، ثم المتوسط.','kfold'],
+['4. Linear Regression: Best-Fit Line','غيّر β₀ و β₁ وشاهد الخط (Y = β₀ + β₁X).','line'],
+['5. Residuals','الخطوط الحمراء = residuals، والهدف تقليل RSS.','resid'],
+['6. Gradient Descent','f(x)=x²، x=4. غيّر α وشاهد Convergence أو Overshooting.','gd'],
+['7. Sigmoid Function','حرّك z وشاهد σ(z) والـ Class؛ الـ boundary عند z = 0.','sig'],
+['8. Decision Boundary','غيّر w₁ وw₂ وb وشاهد الخط z = 0 يفصل Class 1 عن Class 0. (نقاط افتراضية للتوضيح.)','dbound'],
+['9. L1 vs L2 Regularization','L1 يصفّر معاملات (feature selection)، L2 يقلل الكل تدريجيًا.','l12'],
+['10. K-Means Clustering','اضغط Next Step وشاهد الإسناد ثم تحديث الـ centroids حتى الثبات.','kmeans'],
+['11. Euclidean vs Manhattan','المسافة المستقيمة مقابل الحركة الأفقية والرأسية.','dist'],
+['12. Bayes Theorem Diagram','العلاقة بين Posterior وLikelihood وPrior وMarginal.','bdiag'],
+['13. Supervised vs Unsupervised','مع labels مقابل بدونها، واضغط "اكتشف الأنماط" لترى clustering.','svu']];
+function lab(a){a.innerHTML='<h2>Visual Learning Lab</h2><p>13 رسمًا تفاعليًا. كل رسم بنقاط توضيحية افتراضية ما لم يُذكر غير ذلك.</p>'+LAB.map((l,i)=>`<div class="card"><h3 style="margin:0 0 6px">${l[0]}</h3><p>${l[1]}</p><div id="${l[2]==='gd'?'gdw':'lw'+i}"></div></div>`).join('');
+ LAB.forEach((l,i)=>{try{W[l[2]](document.getElementById(l[2]==='gd'?'gdw':'lw'+i))}catch(e){document.getElementById('lw'+i).textContent='تعذّر تحميل الرسم'}})}
+
+render();
+</script>
+</body>
+</html>
